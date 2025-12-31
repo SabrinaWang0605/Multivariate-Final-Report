@@ -33,7 +33,7 @@ library(pROC)           # roc, auc, ggroc
 # 分群分析
 library(cluster)        # daisy, silhouette
 library(clustMixType)   # kproto
-
+library(patchwork)
 # 遺失值處理
 library(missMDA)        # imputeFAMD, estim_ncpFAMD
 # ============================================
@@ -444,10 +444,10 @@ data = data1 %>%
     # ===== 四象限行為分類 =====
     行為類型 = case_when(
       # 未參與：沒有任何行為
-      被動抵制 == 0 & 主動表達 == 0 & 主動攻擊分數 < 2 ~ "未參與",
+      被動抵制 == 0 & 主動表達 == 0 & 主動攻擊分數 < 2.5 & 被動攻擊分數 < 2.5 ~ "未參與",
       
-      # 被動攻擊：只有被動行為（取消關注/拒看），攻擊言論低
-      被動抵制 == 1 & 主動表達 == 0 & 主動攻擊分數 < 2.5 ~ "被動攻擊",
+      # 被動觀察：只有被動行為（取消關注/拒看），攻擊言論低
+      被動抵制 == 1 & 主動表達 == 0 & 主動攻擊分數 < 2.5 & 被動攻擊分數 >= 2.5 ~ "被動觀察",
       
       # 主動問責：有主動表達，但攻擊言論低
       被動抵制 == 0 & 主動表達 == 1 & 主動攻擊分數 < 2.5 ~ "主動問責",
@@ -460,7 +460,7 @@ data = data1 %>%
     ),
     行為類型 = factor(
       行為類型,
-      levels = c("未參與", "被動攻擊", "主動問責", "主動攻擊", "混合/其他")
+      levels = c("未參與", "被動觀察", "主動問責", "主動攻擊", "混合/其他")
     )
   )
 
@@ -636,7 +636,7 @@ p1 <- ggplot(behavior_dist, aes(x = 行為類型, y = n, fill = 行為類型)) +
   scale_fill_manual(
     values = c(
       "未參與" = "gray95",
-      "被動攻擊" = "#FFA500",
+      "被動觀察" = "#FFA500",
       "主動問責" = "#00BA38",
       "主動攻擊" = "#F8766D",
       "混合/其他" = "lightblue"
@@ -766,7 +766,6 @@ p3 <- ggplot(q23_summary, aes(x = factor(分數), y = pct, fill = factor(分數)
 print(p3)
 
 # ------ 圖4：人口特徵 × 行為類型 ------
-library(patchwork)
 
 # 4a. 性別
 p4a <- ggplot(data, aes(x = 行為類型, fill = 性別)) +
@@ -889,7 +888,7 @@ p7 = ggplot(satisfaction_long,
   facet_wrap(~變項) +
   scale_fill_manual(
     values = c("未參與" = "gray70",
-               "被動攻擊" = "#FFA500",
+               "被動觀察" = "#FFA500",
                "主動問責" = "#00BA38",
                "主動攻擊" = "#F8766D",
                "混合/其他" = "lightblue")
@@ -917,7 +916,7 @@ print(p7)
 quadrant_data = data.frame(
   x = c(1, 1, 3, 3),
   y = c(1, 3, 1, 3),
-  類型 = c("未參與", "被動攻擊", "主動問責", "主動攻擊"),
+  類型 = c("未參與", "被動觀察", "主動問責", "主動攻擊"),
   描述 = c(
     "沒有行為\n旁觀者",
     "取消關注/拒看\n靜默抵制",
@@ -935,7 +934,7 @@ p_quadrant = ggplot(quadrant_data, aes(x = x, y = y)) +
   scale_color_manual(
     values = c(
       "未參與" = "gray70",
-      "被動攻擊" = "#FFA500",
+      "被動觀察" = "#FFA500",
       "主動問責" = "#00BA38",
       "主動攻擊" = "#F8766D"
     )
@@ -988,7 +987,7 @@ p_q19_v1 = ggplot(q19_summary, aes(x = 行為類型, y = pct, fill = 有害惡�
   geom_col(position = position_dodge(width = 0.8), width = 0.7) +
   geom_text(aes(label = label), 
             position = position_dodge(width = 0.8),
-            vjust = -0.3, size = 3.5) +
+            vjust = 0, size = 3.5) +
   scale_fill_manual(values = c("無" = "skyblue", "有" = "pink")) +
   labs(
     title = "不同行為類型參與有害惡搞的比例",
