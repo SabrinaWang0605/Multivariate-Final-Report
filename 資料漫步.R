@@ -1,75 +1,47 @@
-# 載入必要套件
-# 基礎套件
-library(tidyverse)      # 資料處理與視覺化
-library(haven)          # 讀取SPSS/Stata資料
-library(labelled)       # 處理標籤
+# 資料處理與讀取
+library(tidyverse)      # 含 dplyr, ggplot2, tidyr, stringr, purrr
+library(haven)          # read_sav
+library(labelled)       # zap_labels
 
-# 描述統計
-library(psych)          # describe()
-library(summarytools)   # dfSummary()
-library(skimr)          # skim()
+# 描述統計與相關分析
+library(psych)          # mardia
+library(Hmisc)          # rcorr
 
 # 視覺化
-library(ggplot2)
-library(ggpubr)         # ggarrange()
-library(scales)         # percent()
+library(scales)         # percent, expansion
 library(RColorBrewer)   # 配色
+library(patchwork)      # 圖形拼接 (+, /)
+library(viridis)        # 色盲友善配色
+library(ggpubr)         # ggarrange
+library(ggrepel)        # geom_text_repel
 
-# 關聯性分析
-library(corrplot)       # 相關矩陣圖
-library(ggcorrplot)     # ggplot風格相關圖
+# 地圖
+library(sf)             # st_read, st_centroid
+
+# 統計檢定與 ANOVA
+library(carData)
+library(car)            # leveneTest, Anova
+library(MASS)           # polr
+library(rstatix)        # games_howell_test, dunn_test, box_m
+library(emmeans)        # emmeans, pairs
+library(effectsize)     # 效果量
+
+# 迴歸模型評估
+library(rms)            # lrm
+library(pROC)           # roc, auc, ggroc
 
 # 分群分析
-library(klaR)           # kmodes()
-library(cluster)        # 集群分析工具
-library(factoextra)     # 視覺化
+library(cluster)        # daisy, silhouette
+library(clustMixType)   # kproto
 
-# 模型分析
-library(nnet)           # 多元羅吉斯迴歸
-library(MASS)           # polr() 順序羅吉斯
-library(carData)
-library(car)            # vif(), Anova()
-
-# 無母數檢定
-library(survival)
-library(coin)           # 無母數檢定
-library(rcompanion)     # 效果量
-
-# 結果輸出
-library(stargazer)      # 表格輸出
-library(sjPlot)         # 模型視覺化
-library(xtable)         # LaTeX表格
-
-# 其他
-library(effectsize)
-library(pROC)
-library(lattice)
-library(caret)
-library(Hmisc)
-library(XICOR)
-library(lavaan)
-library(semPlot)
-library(zoo)
-library(lmtest)
-library(sandwich)
-library(Matrix)
-library(mvtnorm)
-library(mediation)
-library(interactions)
-library(rms)
-library(patchwork)
-library(viridisLite)
-library(viridis)
-library(missMDA)
-
+# 遺失值處理
+library(missMDA)        # imputeFAMD, estim_ncpFAMD
 # ============================================
 # 讀取資料
 # ============================================
 
 # 資料
 my_data=read_sav("E:/碩一/資料漫步/data/data.sav")
-
-cat("=== Part 0: FAMD 遺失值填補 ===")
 
 # ====================================
 # Part 0: FAMD 遺失值填補
@@ -466,7 +438,6 @@ data = data1 %>%
     
     # ===== 滿意度變項 =====
     生活滿意度 = q38_01_1,
-    台灣滿意度 = q38_02_1,
     快樂程度 = q39_1,
     同理心程度 = q31_1,
     
@@ -523,10 +494,6 @@ foreign_count <- data %>%
 cat("\n=== 境外樣本 ===\n")
 print(foreign_count)
 
-library(sf)
-library(ggplot2)
-library(tidyverse)
-library(ggrepel)
 # 下載與合併地圖
 taiwan_map = st_read("https://raw.githubusercontent.com/g0v/twgeojson/master/json/twCounty2010.geo.json")
 head(taiwan_map)
@@ -888,8 +855,6 @@ cat("\n卡方檢定：χ² =", round(chisq.test(table_edu)$statistic, 3),
 cat("【出生地區 × 行為類型】\n")
 table_region <- table(data$出生地區, data$行為類型)
 print(table_region)
-cat("\n卡方檢定：χ² =", round(chisq.test(table_region)$statistic, 3),
-    ", p =", format.pval(chisq.test(table_region)$p.value), "\n\n")
 
 # ====================================
 # Part 6: 滿意度分析
@@ -1042,12 +1007,6 @@ print(p_q19_v1)
 # ====================================
 # 核心研究變項：5大熱力圖
 # ====================================
-
-library(tidyverse)
-library(patchwork)
-library(viridisLite)
-library(viridis)
-library(scales)
 
 # ===== 熱力圖1：攻擊敏感度機制 =====
 cat("【1/4】攻擊敏感度機制熱力圖...\n")
@@ -1225,10 +1184,6 @@ cat("【4/4】核心變項相關矩陣熱力圖...\n")
 
 # Spearman 相關係數熱力圖
 
-library(tidyverse)
-library(Hmisc)
-library(ggplot2)
-
 # 準備資料
 cor_data <- data %>%
   dplyr::select(
@@ -1314,7 +1269,6 @@ cat("\n【顯著性矩陣】\n")
 print(round(p_spearman, 4))
 
 # ===== 關鍵發現摘要 =====
-cat("========== 關鍵發現摘要 ==========\n\n")
 
 # 1. 攻擊敏感度效果
 moral_summary = data %>%
@@ -1339,10 +1293,8 @@ print(empathy_summary)
 # ====================================
 # 網路正義行為研究 - 統計分析
 # ====================================
-# 內容: 迴歸模型、ANOVA、SEM、聚類分析
-
 # 第1部分：邏輯迴歸（Logistic Regression）
-cat("\n\n【2】邏輯迴歸：預測高主動攻擊行為\n")
+cat("【1】邏輯迴歸：預測高主動攻擊行為")
 
 # 準備邏輯迴歸數據
 logistic_data = data %>%
@@ -1381,24 +1333,7 @@ for(var in univariate_vars) {
 }
 
 print(univariate_results)
-# 提取結果
-univariate_summary = map_df(univariate_results, function(model) {
-  coef_table = summary(model)$coefficients
-  tibble(
-    變項 = rownames(coef_table)[-1],
-    係數 = coef_table[-1, 1],
-    標準誤 = coef_table[-1, 2],
-    z值 = coef_table[-1, 3],
-    p值 = coef_table[-1, 4],
-    OR = exp(係數),
-    CI_下 = exp(係數 - 1.96 * 標準誤),
-    CI_上 = exp(係數 + 1.96 * 標準誤)
-  )
-}, .id = "模型")
 
-cat("單變項邏輯迴歸結果：\n")
-print(univariate_summary %>% dplyr::select(變項, 係數, OR, p值))
-print(univariate_summary,n=30)
 # 2.2 多變項邏輯迴歸
 cat("\n【2.2】多變項邏輯迴歸\n")
 model_logistic_full = glm(
@@ -1409,7 +1344,7 @@ model_logistic_full = glm(
 )
 print(summary(model_logistic_full))
 
-# 提取係數
+# 建立 logistic_results（在 model_logistic_full 後面加上）
 coef_full = summary(model_logistic_full)$coefficients[-1, ]
 logistic_results <- tibble(
   變項 = rownames(coef_full),
@@ -1424,14 +1359,9 @@ logistic_results <- tibble(
     p值 < 0.001 ~ "***",
     p值 < 0.01 ~ "**",
     p值 < 0.05 ~ "*",
-    TRUE ~ " "
+    TRUE ~ ""
   )
 )
-
-cat("\n多變項邏輯迴歸結果：\n")
-print(logistic_results %>% dplyr::select(變項, OR, CI_下, CI_上, 顯著))
-print(logistic_results)
-
 
 # 2.3 模型擬合度
 cat("\n【2.3】模型擬合度評估\n")
@@ -1441,13 +1371,10 @@ cat("AIC:", round(AIC_full, 2), "\n")
 cat("BIC:", round(BIC_full, 2), "\n")
 
 # Nagelkerke R²
-library(rms)
-library(Hmisc)
 cat("Nagelkerke R²:", round(lrm(高主動攻擊 ~ 年齡_標準化+性別_numeric+被動攻擊_標準化+
                                   攻擊敏感度_標準化+快樂度_標準化, data = logistic_data)$stats['R2'], 3), "\n")
 
 # 2.4 ROC 曲線與 AUC
-library(pROC)
 cat("\n【2.4】ROC 曲線分析\n")
 pred_prob = predict(model_logistic_full, type = "response")
 roc_obj = roc(logistic_data$高主動攻擊, pred_prob)
@@ -1457,7 +1384,6 @@ cat("AUC:", round(auc_value, 3), "\n")
 cat("解釋：模型正確分類的概率為", round(auc_value*100, 1), "%\n\n")
 
 # ROC 圖
-library(ggplot2)
 p_roc = ggroc(roc_obj, color = "#E31A1C", size = 1.2) +
   geom_abline(intercept = 1, slope = 1, linetype = "dashed", color = "gray50") +
   annotate("text", x = 0.6, y = 0.2, 
@@ -1482,7 +1408,7 @@ p_or = ggplot(logistic_results, aes(x = OR, y = reorder(變項, OR))) +
   geom_point(color = "black", size = 3) +
   geom_errorbar(
     aes(xmin = CI_下, xmax = CI_上),
-    height = 0.2, size = 1
+    width = 0.2, size = 1
   ) +
   geom_text(aes(label = paste0(round(OR, 3), " ", 顯著)), 
             hjust = -0.3, size = 5, fontface = "bold",nudge_y = -0.2) +
@@ -1503,13 +1429,6 @@ p_or = ggplot(logistic_results, aes(x = OR, y = reorder(變項, OR))) +
 print(p_or)
 
 # 第3部分：ANOVA 與事後檢定
-
-cat("\n\n=== Part 3: ANOVA 完整分析 ===\n\n")
-library(carData)
-library(car)
-library(effectsize)
-library(rstatix)
-library(emmeans)
 
 # 【3.0】準備資料
 
@@ -1711,6 +1630,8 @@ cat("χ² =", round(kw_age$statistic, 3),
 
 epsilon_age = anova_data %>%
   kruskal_effsize(主動攻擊分數 ~ 年齡組)
+
+print(epsilon_age)
 
 # 事後檢定（Dunn's test）
 cat("\n事後檢定（Dunn's test with Bonferroni）：\n")
@@ -2220,9 +2141,6 @@ print(evaluation_results[, c("k", "wss")])
 # 視覺化評估指標
 # ====================================
 
-library(ggplot2)
-library(tidyr)
-
 # 準備視覺化資料
 eval_long <- evaluation_results %>%
   pivot_longer(
@@ -2302,12 +2220,6 @@ cat("\n【聚類評估指標】\n")
 cat("每個聚類的 WSS：", round(kp$withinss, 2), "\n")
 cat("總 WSS：", round(sum(kp$withinss), 2), "\n")
 
-
-# 群間距離 / 群內距離 的比值，越高越好
-ch_index <- kp$betweenss / sum(kp$withinss) * (nrow(cluster_data) - 3) / 2
-# 群內距離平方和
-cat("\n每個聚類的 WSS：", round(kp$withinss, 2), "\n\n")
-
 # 5.3 聚類特徵 - 準備資料
 kp_out <- as.data.frame(kp$cluster)
 colnames(kp_out) <- "Cluster"
@@ -2342,64 +2254,6 @@ cluster_profiles = final_numeric %>%
 
 cat("【5.3】聚類特徵描述：\n")
 print(cluster_profiles)
-
-# 5.4 聚類視覺化
-p_cluster_scatter = ggplot(final_numeric, 
-                           aes(x = 被動攻擊分數, y = 主動攻擊分數, 
-                               color = factor(Cluster), size = 同理心程度)) +
-  geom_point(alpha = 0.6) +
-  geom_point(data = cluster_profiles %>%
-               left_join(
-                 final_numeric %>%
-                   group_by(Cluster) %>%
-                   summarise(被動攻擊分數 = mean(被動攻擊分數),
-                             主動攻擊分數 = mean(主動攻擊分數)),
-                 by = "Cluster"
-               ),
-             size = 8, shape = 4, stroke = 2, color = "black") +
-  scale_color_manual(
-    values = c("1" = "#2ECC71", "2" = "#F39C12", "3" = "#E74C3C"),
-    name = "聚類"
-  ) +
-  scale_size(name = "同理心等級", range = c(2, 8)) +
-  labs(
-    title = "聚類分析：參與者分布（被動攻擊 vs 主動攻擊）",
-    subtitle = "黑色十字 = 聚類中心 | 點大小 = 同理心程度",
-    x = "被動攻擊分數", y = "主動攻擊分數"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 10),
-    axis.text = element_text(size = 11)
-  )
-
-print(p_cluster_scatter)
-
-# 5.5 聚類箱線圖
-cluster_long = final_numeric %>%
-  mutate(Cluster = factor(Cluster)) %>%
-  pivot_longer(-Cluster, names_to = "變項", values_to = "分數")
-
-p_cluster_box = ggplot(cluster_long, aes(x = Cluster, y = 分數, fill = Cluster)) +
-  geom_boxplot(alpha = 0.7, width = 0.6) +
-  facet_wrap(~變項, scales = "free_y", ncol = 3) +
-  scale_fill_manual(
-    values = c("1" = "#2ECC71", "2" = "#F39C12", "3" = "#E74C3C")
-  ) +
-  labs(
-    title = "各聚類群體的特徵分布",
-    x = "", y = "分數"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
-    strip.text = element_text(size = 10, face = "bold"),
-    legend.position = "top",
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-print(p_cluster_box)
 
 # ====================================
 # 第7部分：效應大小與信心區間
@@ -2442,8 +2296,8 @@ cat("年齡組配對數：", n_comparisons, "\n")
 cat("Bonferroni 調整後 α:", round(bonferroni_alpha, 4), "\n\n")
 
 # kproto分組組間成對比較
-kproto_groups = final$Cluster
-n1_comparisons = choose(length(kproto_groups), 2)
+kproto_groups = length(unique(final$Cluster))
+n1_comparisons = choose(kproto_groups, 2)
 bonferroni_alpha1 = 0.05 / n1_comparisons
 
 cat("年齡組配對數：", n1_comparisons, "\n")
