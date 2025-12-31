@@ -499,7 +499,7 @@ print(table(data$出生地區, useNA = "ifany"))
 
 cat("\n出生縣市分布（前10名）：\n")
 print(head(sort(table(data$出生縣市), decreasing = TRUE), 10))
-str(data)
+
 # ====================================
 # 出生地分析
 # ====================================
@@ -665,7 +665,7 @@ behavior_dist <- data %>%
 
 p1 <- ggplot(behavior_dist, aes(x = 行為類型, y = n, fill = 行為類型)) +
   geom_col(width = 0.7) +
-  geom_text(aes(label = label), vjust = -0.5, size = 4, fontface = "bold") +
+  geom_text(aes(label = label), vjust = 0.1, size = 4, fontface = "bold") +
   scale_fill_manual(
     values = c(
       "未參與" = "gray95",
@@ -727,7 +727,7 @@ p2 <- ggplot(q22_summary, aes(x = factor(分數), y = pct, fill = factor(分數)
   ) +
   facet_wrap(~題項, ncol = 3) +
   labs(
-    title = "被動攻擊分數 - 觀察到不文明言論的頻率",
+    title = "被動攻擊 - 觀察到不文明言論的頻率",
     subtitle = paste0("N = ", nrow(data)),
     x = "頻率 (1=從來沒有, 4=經常)",
     y = "百分比"
@@ -892,97 +892,10 @@ cat("\n卡方檢定：χ² =", round(chisq.test(table_region)$statistic, 3),
     ", p =", format.pval(chisq.test(table_region)$p.value), "\n\n")
 
 # ====================================
-# Part 5: 關聯性分析
-# ====================================
-
-cat("=== Part 5: 關聯性分析（Q22 × Q23）===\n")
-
-# 準備數據
-cor_data = data %>%
-  dplyr::select(Q22_髒話, Q22_兇人, Q22_罵人, Q22_不雅玩笑, Q22_諷刺,
-                Q23_髒話, Q23_兇人, Q23_罵人, Q23_不雅玩笑, Q23_諷刺)
-
-names(cor_data) = c(
-  "被動_髒話", "被動_兇人", "被動_罵人", "被動_玩笑", "被動_諷刺",
-  "主動_髒話", "主動_兇人", "主動_罵人", "主動_玩笑", "主動_諷刺"
-)
-
-# 計算相關矩陣
-cor_matrix = cor(cor_data, use = "complete.obs")
-print(round(cor_matrix, 3))
-
-# 視覺化1：corrplot
-library(corrplot)
-corrplot(
-  cor_matrix, 
-  method = "color",
-  type = "full",
-  order = "hclust",
-  tl.col = "black",
-  tl.srt = 45,
-  addCoef.col = "black",
-  number.cex = 0.6,
-  title = "被動曝露 × 主動攻擊 相關矩陣",
-  mar = c(0, 0, 2, 0)
-)
-
-# 總分相關
-cor_test = cor.test(data$被動攻擊分數, data$主動攻擊分數)
-cat("\n被動攻擊分數 vs. 主動攻擊分數：\n")
-cat("Pearson r =", round(cor_test$estimate, 3), "\n")
-cat("p-value =", format.pval(cor_test$p.value), "\n")
-
-# 散點圖
-p6 = ggplot(data, aes(x = 被動攻擊分數, y = 主動攻擊分數)) +
-  geom_point(alpha = 0.3, color = "steelblue") +
-  geom_smooth(method = "lm", color = "red", se = TRUE, linewidth = 1.5) +
-  labs(
-    title = "被動攻擊行為 vs. 主動攻擊行為",
-    subtitle = paste0("Pearson r = ", round(cor_test$estimate, 3), 
-                      ", p < .001"),
-    x = "被動攻擊行為（觀察他人不文明言論）",
-    y = "主動攻擊（自己使用不文明言論）"
-  ) +
-  theme_minimal(base_size = 12)
-
-print(p6)
-
-# 只看 Q22 × Q23 的交叉相關
-q22_q23_cor = cor_matrix[1:5, 6:10]
-
-corrplot(
-  q22_q23_cor,
-  method = "color",
-  addCoef.col = "black",
-  number.cex = 0.8,
-  tl.col = "black",
-  tl.srt = 45,
-  cl.pos = "r",
-  title = "主動 × 被動 交叉相關",
-  mar = c(0, 0, 2, 0)
-)
-
-cat("\n✓ 關聯性分析完成！\n")
-
-# ====================================
 # Part 6: 滿意度分析
 # ====================================
 
 cat("=== Part 6: 滿意度分析 ===\n")
-
-# 描述統計
-satisfaction_summary = data %>%
-  dplyr::group_by(行為類型) %>%
-  dplyr::summarise(
-    n = dplyr::n(),
-    生活滿意度_M = mean(生活滿意度, na.rm = TRUE),
-    生活滿意度_SD = sd(生活滿意度, na.rm = TRUE),
-    快樂程度_M = mean(快樂程度, na.rm = TRUE),
-    快樂程度_SD = sd(快樂程度, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-print(satisfaction_summary)
 
 # ANOVA
 aov_life = aov(生活滿意度 ~ 行為類型, data = data)
@@ -1030,8 +943,6 @@ p7 = ggplot(satisfaction_long,
   )
 
 print(p7)
-
-cat("\n✓ 滿意度分析完成！\n")
 
 # ====================================
 # 四象限示意圖
@@ -1090,37 +1001,10 @@ p_quadrant = ggplot(quadrant_data, aes(x = x, y = y)) +
 
 print(p_quadrant)
 
-
-# Q16/Q17: 無害惡搞
-cat("【Q16-Q17 無害惡搞】\n")
-cat("參與無害惡搞：\n")
-print(table(data$無害惡搞))
-print(prop.table(table(data$無害惡搞)) * 100)
-
-# Q18/Q19: 有害惡搞
-cat("\n【Q18-Q19 有害惡搞】\n")
-cat("參與有害惡搞：\n")
-print(table(data$有害惡搞))
-print(prop.table(table(data$有害惡搞)) * 100)
-
-# 極端行為
-cat("\n【極端行為（Q19_01 或 Q19_02）】\n")
-print(table(data$極端行為))
-print(prop.table(table(data$極端行為)) * 100)
-
 # 交叉分析：行為類型 × 有害惡搞
 cat("\n\n【行為類型 × 有害惡搞 交叉表】\n")
 cross_tab = table(data$行為類型, data$有害惡搞)
 print(cross_tab)
-
-cat("\n比例（列百分比）：\n")
-print(round(prop.table(cross_tab, margin = 1) * 100, 2))
-
-# 卡方檢定
-chi_test = chisq.test(cross_tab)
-cat("\n卡方檢定：χ² =", round(chi_test$statistic, 3), 
-    ", df =", chi_test$parameter,
-    ", p =", format.pval(chi_test$p.value), "\n")
 
 # 視覺化
 #圖一分組長條圖
@@ -1165,69 +1049,8 @@ library(viridisLite)
 library(viridis)
 library(scales)
 
-cat("開始生成5大核心熱力圖\n")
-
-# ===== 熱力圖1：正義升級路徑 =====
-cat("【1/5】正義升級路徑熱力圖...\n")
-
-upgrade_data <- data %>%
-  mutate(
-    被動攻擊等級 = case_when(
-      被動攻擊分數 < 2 ~ "低被動",
-      被動攻擊分數 < 3 ~ "中被動",
-      TRUE ~ "高被動"
-    ),
-    被動攻擊等級 = factor(被動攻擊等級, levels = c("低被動", "中被動", "高被動")),
-    
-    主動攻擊等級 = case_when(
-      主動攻擊分數 < 1.5 ~ "低攻擊",
-      主動攻擊分數 < 2.5 ~ "中攻擊",
-      TRUE ~ "高攻擊"
-    ),
-    主動攻擊等級 = factor(主動攻擊等級, levels = c("低攻擊", "中攻擊", "高攻擊")),
-    
-    行為類型 = factor(行為類型, levels = c("未參與", "被動攻擊", "主動問責", "主動攻擊", "混合/其他"))
-  ) %>%
-  count(被動攻擊等級, 主動攻擊等級, 行為類型) %>%
-  group_by(被動攻擊等級, 主動攻擊等級) %>%
-  mutate(pct = n / sum(n) * 100) %>%
-  ungroup()
-
-p1_upgrade <- ggplot(upgrade_data, 
-                     aes(x = 主動攻擊等級, y = 行為類型, fill = pct)) +
-  geom_tile(color = "white", linewidth = 1.5) +
-  geom_text(aes(label = paste0(n, "\n", round(pct, 1), "%")), 
-            color = "black", size = 3.5, fontface = "bold", lineheight = 0.9) +
-  facet_wrap(~被動攻擊等級, ncol = 3) +
-  scale_fill_gradient(
-    low = "white", 
-    high = "#E31A1C", 
-    name = "比例 (%)",
-    limits = c(0, max(upgrade_data$pct, na.rm = TRUE))
-  ) +
-  labs(
-    title = "正義行為升級路徑：被動攻擊 → 主動攻擊 → 行為類型",
-    subtitle = "觀察不同曝露程度下，主動攻擊如何驅動行為升級",
-    x = "主動攻擊等級",
-    y = "行為類型"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 10),
-    strip.text = element_text(size = 11, face = "bold", color = "white"),
-    strip.background = element_rect(fill = "#2C3E50", color = NA),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
-    axis.text.y = element_text(size = 9),
-    legend.position = "right",
-    panel.border = element_rect(color = "gray80", fill = NA),
-    plot.margin = margin(10, 10, 10, 10)
-  )
-
-print(p1_upgrade)
-
-# ===== 熱力圖2：攻擊敏感度機制 =====
-cat("【2/5】攻擊敏感度機制熱力圖...\n")
+# ===== 熱力圖1：攻擊敏感度機制 =====
+cat("【1/4】攻擊敏感度機制熱力圖...\n")
 
 # 計算攻擊敏感指數
 data = data %>%
@@ -1248,7 +1071,7 @@ moral_data = data %>%
   mutate(pct = n / sum(n) * 100) %>%
   ungroup()
 
-p2_moral = ggplot(moral_data, 
+p1_moral = ggplot(moral_data, 
                    aes(x = 攻擊敏感程度, y = 行為類型, fill = pct)) +
   geom_tile(color = "white", linewidth = 2) +
   geom_text(aes(label = paste0(round(pct, 1), "%\n(n=", n, ")")), 
@@ -1273,14 +1096,13 @@ p2_moral = ggplot(moral_data,
     axis.text.x = element_text(size = 11, face = "bold"),
     axis.text.y = element_text(size = 11, face = "bold"),
     legend.position = "right",
-    panel.grid = element_blank(),
-    plot.margin = margin(10, 10, 10, 10)
+    panel.grid = element_blank()
   )
 
-print(p2_moral)
+print(p1_moral)
 
-# ===== 熱力圖3：情緒驅動機制 =====
-cat("【3/5】情緒驅動機制熱力圖...\n")
+# ===== 熱力圖2：情緒驅動機制 =====
+cat("【2/4】情緒驅動機制熱力圖...\n")
 
 emotion_data = data %>%
   mutate(
@@ -1309,11 +1131,11 @@ emotion_data = data %>%
                      levels = c("低攻擊", "中攻擊", "高攻擊"))
   ) %>%
   count(生活滿意度_等級, 快樂程度_等級, 主動攻擊_等級) %>%
-  group_by(生活滿意度_等級, 快樂程度_等級) %>%
+  group_by(快樂程度_等級) %>%
   mutate(pct = n / sum(n) * 100) %>%
   ungroup()
 
-p3_emotion = ggplot(emotion_data, 
+p2_emotion = ggplot(emotion_data, 
                      aes(x = 快樂程度_等級, y = 生活滿意度_等級, fill = pct)) +
   geom_tile(color = "white", linewidth = 1.5) +
   geom_text(aes(label = paste0(round(pct, 1), "%")), 
@@ -1338,15 +1160,14 @@ p3_emotion = ggplot(emotion_data,
     strip.background = element_rect(fill = "#8B0000", color = NA),
     axis.text = element_text(size = 10, face = "bold"),
     legend.position = "right",
-    panel.border = element_rect(color = "gray80", fill = NA),
-    plot.margin = margin(10, 10, 10, 10)
+    panel.border = element_rect(color = "gray80", fill = NA)
   )
 
-print(p3_emotion)
+print(p2_emotion)
 
 
-# ===== 熱力圖4：同理心保護因子 =====
-cat("【4/5】同理心保護因子熱力圖...\n")
+# ===== 熱力圖3：同理心保護因子 =====
+cat("【3/4】同理心保護因子熱力圖...\n")
 
 empathy_data = data %>%
   mutate(
@@ -1364,11 +1185,11 @@ empathy_data = data %>%
   ) %>%
   filter(!is.na(同理心等級)) %>%
   count(同理心等級, 極端行為, 行為類型) %>%
-  group_by(同理心等級, 極端行為) %>%
+  group_by(同理心等級) %>%
   mutate(pct = n / sum(n) * 100) %>%
   ungroup()
 
-p4_empathy = ggplot(empathy_data, 
+p3_empathy = ggplot(empathy_data, 
                      aes(x = 極端行為, y = 行為類型, fill = pct)) +
   geom_tile(color = "white", linewidth = 1.5) +
   geom_text(aes(label = paste0(round(pct, 1), "%\n(n=", n, ")")), 
@@ -1394,153 +1215,15 @@ p4_empathy = ggplot(empathy_data,
     axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
     axis.text.y = element_text(size = 9),
     legend.position = "right",
-    panel.border = element_rect(color = "gray80", fill = NA),
-    plot.margin = margin(10, 10, 10, 10)
+    panel.border = element_rect(color = "gray80", fill = NA)
   )
 
-print(p4_empathy)
+print(p3_empathy)
 
-# ===== 熱力圖5：核心變項相關矩陣 =====
-cat("【5/5】核心變項相關矩陣熱力圖...\n")
+# ===== 熱力圖4：核心變項相關矩陣 =====
+cat("【4/4】核心變項相關矩陣熱力圖...\n")
 
-# 準備相關矩陣資料
-cor_data = data %>%
-  dplyr::select(
-    被動攻擊分數, 
-    主動攻擊分數,
-    攻擊敏感度指數,
-    生活滿意度, 
-    快樂程度,
-    同理心程度,
-    年齡
-  ) %>%
-  na.omit()
-
-library(Hmisc)
-# Pearson相關
-cor_pearson = rcorr(as.matrix(cor_data), type = "pearson")
-r_pearson = cor_pearson$r
-p_pearson = cor_pearson$P
-cat("Pearson 相關計算完成\n")
-
-# Spearman相關
-cor_spearman = rcorr(as.matrix(cor_data), type = "spearman")
-r_spearman = cor_spearman$r
-p_spearman = cor_spearman$P
-cat("Spearman 相關計算完成\n")
-
-#計算差異
-diff_matrix = abs(r_pearson - r_spearman)
-avg_diff = mean(diff_matrix[upper.tri(diff_matrix)], na.rm = TRUE)
-
-#差異統計
-diff_summary = data.frame(
-  ranges = c("< 0.01","0.01-0.02","0.02-0.05",">0.05"),
-  nums=c(
-    sum(diff_matrix[upper.tri(diff_matrix)] < 0.01),
-    sum(diff_matrix[upper.tri(diff_matrix)] >= 0.01 &
-        diff_matrix[upper.tri(diff_matrix)] < 0.02),
-    sum(diff_matrix[upper.tri(diff_matrix)] >= 0.02 &
-        diff_matrix[upper.tri(diff_matrix)] < 0.05),
-    sum(diff_matrix[upper.tri(diff_matrix)] >= 0.05)
-  )
-)
-print(diff_summary)
-# 轉為長格式
-compare_long = expand.grid(
-  b1 = rownames(r_pearson),
-  b2 = colnames(r_pearson),
-  stringsAsFactors = FALSE
-) %>%
-  mutate(
-    r_pearson  = mapply(function(x, y) r_pearson[x, y], b1, b2),
-    r_spearman = mapply(function(x, y) r_spearman[x, y], b1, b2),
-    p_pearson  = mapply(function(x, y) p_pearson[x, y], b1, b2),
-    p_spearman = mapply(function(x, y) p_spearman[x, y], b1, b2),
-    sig_pearson = case_when(
-      is.na(p_pearson) ~ "",
-      p_pearson < 0.001 ~ "***",
-      p_pearson < 0.01 ~ "**",
-      p_pearson < 0.05 ~ "*",
-      TRUE ~ ""
-    ),
-    sig_spearman = case_when(
-      is.na(p_spearman) ~ "",
-      p_spearman < 0.001 ~ "***",
-      p_spearman < 0.01 ~ "**",
-      p_spearman < 0.05 ~ "*",
-      TRUE ~ ""
-    )
-  )
-compare_long$idx_b1 = match(compare_long$b1, rownames(r_pearson))
-compare_long$idx_b2 = match(compare_long$b2, colnames(r_pearson))
-compare_long$loc = ifelse(
-  compare_long$idx_b1 == compare_long$idx_b2,
-  "對角線",
-  ifelse(
-    compare_long$idx_b1 < compare_long$idx_b2,
-    "上三角",
-    "下三角"
-  )
-)
-
-# ✅ 最后用 mutate 添加标签和色彩
-compare_long = compare_long %>%
-  mutate(
-    labels = case_when(
-      loc == "對角線" ~ "1.00",
-      loc == "上三角" ~ paste0(format(round(r_pearson, 3), nsmall = 3), sig_pearson),
-      TRUE ~ paste0(format(round(r_spearman, 3), nsmall = 3), sig_spearman)
-    ),
-    full = case_when(
-      loc == "對角線" ~ 1.0,
-      loc == "上三角" ~ r_pearson,
-      TRUE ~ r_spearman
-    )
-  )
-
-
-table(compare_long$loc)
-compare_long %>% group_by(loc) %>% summarise(count = n())
-
-p_compare_main = ggplot(compare_long, 
-                         aes(x = b2, y = b1, fill = full)) +
-  geom_tile(color = "white", linewidth = 1.5) +
-  geom_text(aes(label = labels), 
-            color = "black", size = 4.5, fontface = "bold") +
-  scale_fill_gradient2(
-    low = "#2166AC",    # 藍色（負相關）
-    mid = "white",      # 白色（無相關）
-    high = "#B2182B",   # 紅色（正相關）
-    midpoint = 0,
-    limits = c(-1, 1),
-    name = "Pearson r /\nSpearman ρ"
-  ) +
-  scale_y_discrete(limits = rev) +
-  labs(
-    title = "Pearson vs Spearman 相關對比",
-    subtitle = "上三角 = Pearson r | 下三角 = Spearman ρ | *** p<.001, ** p<.01, * p<.05",
-    caption = paste0("N = ", nrow(cor_data),
-                     " | 平均差異 = ", round(avg_diff, 3))
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 11, lineheight = 1.2),
-    plot.caption = element_text(hjust = 1, size = 10, face = "italic"),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 11, lineheight = 0.9),
-    axis.text.y = element_text(size = 11, lineheight = 0.9),
-    legend.position = "right",
-    legend.title = element_text(size = 10, face = "bold"),
-    panel.grid = element_blank(),
-    plot.margin = margin(10, 10, 10, 10)
-  )
-
-print(p_compare_main)
-
-# ====================================
 # Spearman 相關係數熱力圖
-# ====================================
 
 library(tidyverse)
 library(Hmisc)
@@ -1630,10 +1313,6 @@ print(round(r_spearman, 3))
 cat("\n【顯著性矩陣】\n")
 print(round(p_spearman, 4))
 
-# ===== 生成摘要報告 =====
-cat("熱力圖生成完成！\n")
-
-
 # ===== 關鍵發現摘要 =====
 cat("========== 關鍵發現摘要 ==========\n\n")
 
@@ -1647,321 +1326,22 @@ moral_summary = data %>%
 cat("【發現1】攻擊敏感度效果\n")
 print(moral_summary)
 
-# 2. 情緒失調影響
-emotion_summary = data %>%
-  filter(生活滿意度 <= 2 & 快樂程度 <= 2) %>%
-  summarise(
-    不滿意且不快樂人數 = n(),
-    高攻擊比例 = mean(主動攻擊分數 >= 2.5, na.rm = TRUE) * 100
-  )
-
-cat("【發現2】情緒失調影響\n")
-print(emotion_summary)
-cat("\n")
-
-# 3. 同理心保護效果
+# 2. 同理心保護效果
 empathy_summary = data %>%
   group_by(同理心程度) %>%
   summarise(
-    極端行為比例 = mean(q18 == 1 & (q19_01 == 1 | q19_02 == 1), na.rm = TRUE) * 100
+    極端行為比例 = mean(q18 == 1 & (q19_01 == 1 | q19_02 == 1), na.rm = TRUE)
   )
 
-cat("【發現3】同理心保護效果\n")
+cat("【發現2】同理心保護效果\n")
 print(empathy_summary)
-cat("\n")
-
-cat("✓ 分析完成！\n")
 
 # ====================================
-# Part 7: Chatterjee 相關係數分析（XICOR）
-# ====================================
-
-cat("=== Part 7: Chatterjee 相關係數分析 ===\n")
-cat("用於偵測非線性依賴關係\n\n")
-
-library(XICOR)
-
-# ====================================
-# 7.1 核心變項的 Chatterjee 相關
-# ====================================
-
-cat("【7.1】核心變項 Chatterjee 相關係數\n")
-
-# 準備資料
-xicor_data <- data %>%
-  dplyr::select(
-    被動攻擊分數,
-    主動攻擊分數,
-    攻擊敏感度指數,
-    同理心程度,
-    生活滿意度,
-    快樂程度,
-    年齡
-  )  %>%
-  # 移除所有標籤，轉為純數值
-  mutate(across(everything(), ~as.numeric(as.character(.)))) %>%
-  na.omit()
-
-cat("樣本數：", nrow(xicor_data), "\n\n")
-
-# 計算所有配對的 Chatterjee 相關
-vars <- colnames(xicor_data)
-n_vars <- length(vars)
-
-# 建立結果矩陣
-xi_matrix <- matrix(NA, nrow = n_vars, ncol = n_vars)
-p_matrix <- matrix(NA, nrow = n_vars, ncol = n_vars)
-rownames(xi_matrix) <- colnames(xi_matrix) <- vars
-rownames(p_matrix) <- colnames(p_matrix) <- vars
-
-# 計算 xi 相關係數
-cat("計算 Chatterjee 相關係數中...\n")
-
-for (i in 1:n_vars) {
-  for (j in 1:n_vars) {
-    if (i == j) {
-      xi_matrix[i, j] <- 1
-      p_matrix[i, j] <- NA
-    } else {
-      result <- xicor(xicor_data[[i]], xicor_data[[j]], pvalue = TRUE)
-      xi_matrix[i, j] <- result$xi
-      p_matrix[i, j] <- result$pval
-    }
-  }
-  cat("  完成：", vars[i], "\n")
-}
-
-cat("\n【Chatterjee 相關係數矩陣 (ξ)】\n")
-print(round(xi_matrix, 3))
-
-# ====================================
-# 7.2 與 Pearson/Spearman 比較
-# ====================================
-
-cat("\n【7.2】三種相關係數比較\n")
-
-# Pearson 相關
-pearson_matrix <- cor(xicor_data, method = "pearson")
-
-# Spearman 相關
-spearman_matrix <- cor(xicor_data, method = "spearman")
-
-# 建立比較表（只取上三角）
-comparison_results <- data.frame()
-
-for (i in 1:(n_vars - 1)) {
-  for (j in (i + 1):n_vars) {
-    comparison_results <- rbind(comparison_results, data.frame(
-      變項1 = vars[i],
-      變項2 = vars[j],
-      Pearson_r = round(pearson_matrix[i, j], 3),
-      Spearman_rho = round(spearman_matrix[i, j], 3),
-      Chatterjee_xi = round(xi_matrix[i, j], 3),
-      xi_pvalue = round(p_matrix[i, j], 4),
-      顯著 = ifelse(p_matrix[i, j] < 0.001, "***",
-                  ifelse(p_matrix[i, j] < 0.01, "**",
-                         ifelse(p_matrix[i, j] < 0.05, "*", "")))
-    ))
-  }
-}
-
-cat("\n三種相關係數比較表：\n")
-print(comparison_results, row.names = FALSE)
-
-# ====================================
-# 7.3 重點關係分析
-# ====================================
-
-cat("\n【7.3】重點關係分析\n")
-
-# 被動攻擊 → 主動攻擊
-cat("\n--- 被動攻擊 → 主動攻擊 ---\n")
-xi_result <- xicor(xicor_data$被動攻擊分數, xicor_data$主動攻擊分數, pvalue = TRUE)
-cat("Chatterjee ξ:", round(xi_result$xi, 4), "\n")
-cat("p-value:", format.pval(xi_result$pval), "\n")
-cat("Pearson r:", round(cor(xicor_data$被動攻擊分數, xicor_data$主動攻擊分數), 4), "\n")
-
-# 攻擊敏感度 → 主動攻擊
-cat("\n--- 攻擊敏感度 → 主動攻擊 ---\n")
-xi_result2 <- xicor(xicor_data$攻擊敏感度指數, xicor_data$主動攻擊分數, pvalue = TRUE)
-cat("Chatterjee ξ:", round(xi_result2$xi, 4), "\n")
-cat("p-value:", format.pval(xi_result2$pval), "\n")
-cat("Pearson r:", round(cor(xicor_data$攻擊敏感度指數, xicor_data$主動攻擊分數), 4), "\n")
-
-# 同理心 → 主動攻擊（預期負向或非線性）
-cat("\n--- 同理心 → 主動攻擊 ---\n")
-xi_result3 <- xicor(xicor_data$同理心程度, xicor_data$主動攻擊分數, pvalue = TRUE)
-cat("Chatterjee ξ:", round(xi_result3$xi, 4), "\n")
-cat("p-value:", format.pval(xi_result3$pval), "\n")
-cat("Pearson r:", round(cor(xicor_data$同理心程度, xicor_data$主動攻擊分數), 4), "\n")
-
-# ====================================
-# 7.4 視覺化：Chatterjee 相關熱力圖
-# ====================================
-
-cat("\n【7.4】視覺化\n")
-
-# 轉換為長格式
-xi_long <- as.data.frame(xi_matrix) %>%
-  rownames_to_column("變項1") %>%
-  pivot_longer(-變項1, names_to = "變項2", values_to = "xi") %>%
-  left_join(
-    as.data.frame(p_matrix) %>%
-      rownames_to_column("變項1") %>%
-      pivot_longer(-變項1, names_to = "變項2", values_to = "pvalue"),
-    by = c("變項1", "變項2")
-  ) %>%
-  mutate(
-    sig = case_when(
-      變項1 == 變項2 ~ "",
-      pvalue < 0.001 ~ "***",
-      pvalue < 0.01 ~ "**",
-      pvalue < 0.05 ~ "*",
-      TRUE ~ ""
-    ),
-    label = ifelse(變項1 == 變項2, "1.00", 
-                   paste0(format(round(xi, 3), nsmall = 3), sig))
-  )
-
-# 熱力圖
-p_xicor_heatmap <- ggplot(xi_long, aes(x = 變項2, y = 變項1, fill = xi)) +
-  geom_tile(color = "white", linewidth = 1.5) +
-  geom_text(aes(label = label), color = "black", size = 4, fontface = "bold") +
-  scale_fill_gradient2(
-    low = "#2166AC",
-    mid = "white",
-    high = "#B2182B",
-    midpoint = 0,
-    limits = c(-0.1, 1),
-    name = "Chatterjee ξ"
-  ) +
-  scale_y_discrete(limits = rev) +
-  labs(
-    title = "Chatterjee 相關係數矩陣 (ξ)",
-    subtitle = "偵測任意函數依賴關係 | *** p<.001, ** p<.01, * p<.05",
-    caption = paste0("N = ", nrow(xicor_data), " | ξ=0 表示獨立, ξ=1 表示完全函數關係"),
-    x = NULL,
-    y = NULL
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 11),
-    plot.caption = element_text(hjust = 1, size = 10, face = "italic"),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-    axis.text.y = element_text(size = 10),
-    legend.position = "right",
-    panel.grid = element_blank()
-  )
-
-print(p_xicor_heatmap)
-
-# ====================================
-# 7.5 三種相關係數並排比較圖
-# ====================================
-
-# 準備比較視覺化資料
-compare_plot_data <- comparison_results %>%
-  pivot_longer(
-    cols = c(Pearson_r, Spearman_rho, Chatterjee_xi),
-    names_to = "方法",
-    values_to = "係數"
-  ) %>%
-  mutate(
-    配對 = paste0(變項1, "\n vs \n", 變項2),
-    方法 = factor(方法, 
-                levels = c("Pearson_r", "Spearman_rho", "Chatterjee_xi"),
-                labels = c("Pearson r", "Spearman ρ", "Chatterjee ξ"))
-  )
-
-# 選取重點配對
-key_pairs <- c(
-  "被動攻擊分數\n vs \n主動攻擊分數",
-  "攻擊敏感度指數\n vs \n主動攻擊分數",
-  "同理心程度\n vs \n主動攻擊分數",
-  "生活滿意度\n vs \n主動攻擊分數"
-)
-
-p_compare_methods <- compare_plot_data %>%
-  filter(配對 %in% key_pairs) %>%
-  ggplot(aes(x = 方法, y = 係數, fill = 方法)) +
-  geom_col(alpha = 0.8, width = 0.7) +
-  geom_text(aes(label = round(係數, 3)), 
-            vjust = -0.5, size = 3.5, fontface = "bold") +
-  facet_wrap(~配對, ncol = 2, scales = "free_x") +
-  scale_fill_manual(
-    values = c("Pearson r" = "#3498DB", 
-               "Spearman ρ" = "#2ECC71", 
-               "Chatterjee ξ" = "#E74C3C")
-  ) +
-  labs(
-    title = "三種相關係數比較：Pearson vs Spearman vs Chatterjee",
-    subtitle = "Chatterjee ξ 可偵測非線性依賴關係",
-    x = NULL,
-    y = "相關係數"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 10),
-    strip.text = element_text(size = 9, face = "bold"),
-    strip.background = element_rect(fill = "grey95", color = NA),
-    legend.position = "bottom",
-    axis.text.x = element_text(size = 10, face = "bold")
-  )
-
-print(p_compare_methods)
-
-# ====================================
-# 7.6 非線性關係探索
-# ====================================
-
-cat("\n【7.6】非線性關係探索\n")
-
-# 找出 Chatterjee 比 Pearson 高很多的配對（可能存在非線性關係）
-nonlinear_candidates <- comparison_results %>%
-  mutate(
-    差異 = Chatterjee_xi - abs(Pearson_r),
-    可能非線性 = 差異 > 0.05
-  ) %>%
-  filter(可能非線性) %>%
-  arrange(desc(差異))
-
-if (nrow(nonlinear_candidates) > 0) {
-  cat("\n可能存在非線性關係的變項配對（ξ > |r| + 0.05）：\n")
-  print(nonlinear_candidates %>% dplyr::select(變項1, 變項2, Pearson_r, Chatterjee_xi, 差異))
-} else {
-  cat("\n未發現明顯的非線性關係\n")
-}
-
-# ====================================
-# 7.7 摘要報告
-# ====================================
-
-cat("\n【7.7】Chatterjee 相關分析摘要\n")
-
-# 找出最強的依賴關係
-top_xi <- comparison_results %>%
-  arrange(desc(Chatterjee_xi)) %>%
-  head(5)
-
-cat("\n最強的依賴關係（依 ξ 值排序）：\n")
-for (i in 1:nrow(top_xi)) {
-  cat(sprintf("  %d. %s ↔ %s: ξ = %.3f %s\n",
-              i, top_xi$變項1[i], top_xi$變項2[i], 
-              top_xi$Chatterjee_xi[i], top_xi$顯著[i]))
-}
-
-cat("✓ Chatterjee 相關分析完成！\n\n")
-
-# ====================================
-# 網路正義行為研究 - 進階統計分析
+# 網路正義行為研究 - 統計分析
 # ====================================
 # 內容: 迴歸模型、ANOVA、SEM、聚類分析
 
-# ====================================
-# 第2部分：邏輯迴歸（Logistic Regression）
-# ====================================
+# 第1部分：邏輯迴歸（Logistic Regression）
 cat("\n\n【2】邏輯迴歸：預測高主動攻擊行為\n")
 
 # 準備邏輯迴歸數據
@@ -2023,7 +1403,7 @@ print(univariate_summary,n=30)
 cat("\n【2.2】多變項邏輯迴歸\n")
 model_logistic_full = glm(
   高主動攻擊 ~ 年齡_標準化+性別_numeric+被動攻擊_標準化+
-  攻擊敏感度_標準化,
+  攻擊敏感度_標準化+ 快樂度_標準化,
   data = logistic_data,
   family = "binomial"
 )
@@ -2100,7 +1480,7 @@ print(p_roc)
 p_or = ggplot(logistic_results, aes(x = OR, y = reorder(變項, OR))) +
   geom_vline(xintercept = 1, linetype = "dashed", color = "red", size = 1) +
   geom_point(color = "black", size = 3) +
-  geom_errorbarh(
+  geom_errorbar(
     aes(xmin = CI_下, xmax = CI_上),
     height = 0.2, size = 1
   ) +
@@ -2122,9 +1502,7 @@ p_or = ggplot(logistic_results, aes(x = OR, y = reorder(變項, OR))) +
 
 print(p_or)
 
-# ====================================
 # 第3部分：ANOVA 與事後檢定
-# ====================================
 
 cat("\n\n=== Part 3: ANOVA 完整分析 ===\n\n")
 library(carData)
@@ -2133,9 +1511,7 @@ library(effectsize)
 library(rstatix)
 library(emmeans)
 
-# ====================================
 # 【3.0】準備資料
-# ====================================
 
 cat("【3.0】準備 ANOVA 資料\n")
 
@@ -2149,13 +1525,11 @@ anova_data = data %>%
 
 cat("樣本數：", nrow(anova_data), "\n\n")
 
-# ====================================
 # 【3.1】ANOVA 前提假設檢定
-# ====================================
 
 cat("【3.1】ANOVA 前提假設檢定\n\n")
 
-# ----- 3.1.1 常態性檢定（Shapiro-Wilk）-----
+# 3.1.1 常態性檢定（Shapiro-Wilk）
 cat("--- 3.1.1 常態性檢定（Shapiro-Wilk）---\n")
 
 # 依變項常態性
@@ -2189,8 +1563,8 @@ group_normality = anova_data %>%
   )
 print(group_normality)
 
-# ----- 3.1.2 變異數同質性檢定（Levene's Test）-----
-cat("\n--- 3.1.2 變異數同質性檢定（Levene's Test）---\n")
+# 3.1.2 變異數同質性檢定（Levene's Test）
+cat("\n 3.1.2 變異數同質性檢定（Levene's Test）\n")
 
 levene_results = data.frame()
 
@@ -2241,9 +1615,7 @@ cat("\n✓ 前提假設檢定完成\n")
 cat("建議：若違反常態性，可使用無母數檢定（Kruskal-Wallis）\n")
 cat("建議：若違反變異數同質性，可使用 Welch's ANOVA\n\n")
 
-# ====================================
 # 【3.2】單因子 ANOVA（含效果量）
-# ====================================
 
 cat("【3.2】單因子 ANOVA）\n\n")
 
@@ -2273,7 +1645,7 @@ games_howell_sex = anova_data %>%
   games_howell_test(主動攻擊分數 ~ 性別)
 print(games_howell_sex)
 
-# ----- 3.2.2 年齡組差異 -----
+#  3.2.2 年齡組差異
 cat("\n--- 3.2.2 年齡組差異檢驗 ---\n")
 
 anova_age = aov(主動攻擊分數 ~ 年齡組, data = anova_data)
@@ -2303,9 +1675,6 @@ anova_region = aov(主動攻擊分數 ~ 出生地區, data = anova_data)
 cat("\n標準 ANOVA：\n")
 print(summary(anova_region))
 
-eta_region = eta_squared(anova_region)
-cat("\nη²:", round(eta_region$Eta2, 4), "\n")
-
 cat("\n事後檢定（Tukey HSD）：\n")
 print(TukeyHSD(anova_region))
 
@@ -2315,9 +1684,6 @@ cat("\n--- 3.2.4 教育程度差異檢驗 ---\n")
 anova_edu = aov(主動攻擊分數 ~ 教育程度, data = anova_data)
 cat("\n標準 ANOVA：\n")
 print(summary(anova_edu))
-
-eta_edu = eta_squared(anova_edu)
-cat("\nη²:", round(eta_edu$Eta2, 4), "\n")
 
 cat("\n事後檢定（Tukey HSD）：\n")
 print(TukeyHSD(anova_edu))
