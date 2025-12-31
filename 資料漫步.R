@@ -447,10 +447,13 @@ data = data1 %>%
       被動抵制 == 0 & 主動表達 == 0 & 主動攻擊分數 < 2.5 & 被動攻擊分數 < 2.5 ~ "未參與",
       
       # 被動觀察：只有被動行為（取消關注/拒看），攻擊言論低
-      被動抵制 == 1 & 主動表達 == 0 & 主動攻擊分數 < 2.5 & 被動攻擊分數 >= 2.5 ~ "被動觀察",
+      被動抵制 == 0 & 主動表達 == 0 & 主動攻擊分數 < 2.5 & 被動攻擊分數 >= 2.5 ~ "被動觀察",
+      
+      # 被動抵制：有被動行為，無主動表達，低攻擊
+      被動抵制 == 1 & 主動表達 == 0 & 主動攻擊分數 < 2.5 ~ "被動抵制",
       
       # 主動問責：有主動表達，但攻擊言論低
-      被動抵制 == 0 & 主動表達 == 1 & 主動攻擊分數 < 2.5 ~ "主動問責",
+      主動表達 == 1 & 主動攻擊分數 < 2.5 ~ "主動問責",
       
       # 主動攻擊：有主動表達且攻擊言論高，或攻擊言論非常高
       (被動抵制 == 0 & 主動表達 == 1 & 主動攻擊分數 >= 2.5) | 
@@ -460,7 +463,7 @@ data = data1 %>%
     ),
     行為類型 = factor(
       行為類型,
-      levels = c("未參與", "被動觀察", "主動問責", "主動攻擊", "混合/其他")
+      levels = c("未參與", "被動觀察", "被動抵制", "主動問責", "主動攻擊", "混合/其他")
     )
   )
 
@@ -637,6 +640,7 @@ p1 <- ggplot(behavior_dist, aes(x = 行為類型, y = n, fill = 行為類型)) +
     values = c(
       "未參與" = "gray95",
       "被動觀察" = "#FFA500",
+      "被動抵制" = "gold",
       "主動問責" = "#00BA38",
       "主動攻擊" = "#F8766D",
       "混合/其他" = "lightblue"
@@ -658,8 +662,6 @@ p1 <- ggplot(behavior_dist, aes(x = 行為類型, y = n, fill = 行為類型)) +
 print(p1)
 
 # ------ 圖2：Q22被動攻擊分數分布 ------
-library(scales)
-
 q22_long <- data %>%
   dplyr::select(Q22_髒話, Q22_兇人, Q22_罵人, Q22_不雅玩笑, Q22_諷刺) %>%
   tidyr::pivot_longer(everything(), names_to = "題項", values_to = "分數") %>%
@@ -889,6 +891,7 @@ p7 = ggplot(satisfaction_long,
   scale_fill_manual(
     values = c("未參與" = "gray70",
                "被動觀察" = "#FFA500",
+               "被動抵制" = "gold",
                "主動問責" = "#00BA38",
                "主動攻擊" = "#F8766D",
                "混合/其他" = "lightblue")
@@ -909,61 +912,86 @@ p7 = ggplot(satisfaction_long,
 print(p7)
 
 # ====================================
-# 四象限示意圖
+# 五象限示意圖
 # ====================================
 
-# 建立四象限示意圖
-quadrant_data = data.frame(
-  x = c(1, 1, 3, 3),
-  y = c(1, 3, 1, 3),
-  類型 = c("未參與", "被動觀察", "主動問責", "主動攻擊"),
+# ====================================
+# 五類行為類型二維定位圖
+# ====================================
+
+quadrant_5 = data.frame(
+  x = c(1, 1, 2, 3, 3),
+  y = c(1, 2.5, 2, 1.5, 3),
+  類型 = c("未參與", "被動觀察", "被動抵制", "主動問責", "主動攻擊"),
   描述 = c(
-    "沒有行為\n旁觀者",
-    "取消關注/拒看\n靜默抵制",
+    "不關注\n無行動",
+    "常觀察\n但不行動",
+    "取消關注\n拒看內容",
     "公開指責\n理性批評",
     "言語攻擊\n情緒宣洩"
   )
 )
 
-p_quadrant = ggplot(quadrant_data, aes(x = x, y = y)) +
-  geom_point(aes(color = 類型), size = 25, alpha = 0.6) +
-  geom_text(aes(label = 類型), size = 9, fontface = "bold") +
-  geom_text(aes(label = 描述), vjust = 3, size = 4, lineheight = 0.9) +
-  geom_hline(yintercept = 2, linetype = "dashed", color = "gray50") +
-  geom_vline(xintercept = 2, linetype = "dashed", color = "gray50") +
+p_quadrant_5 = ggplot(quadrant_5, aes(x = x, y = y)) +
+  # 背景區塊
+  annotate("rect", xmin = 0.4, xmax = 1.7, ymin = 0.4, ymax = 2.3, 
+           fill = "#E8F8F5", alpha = 0.4) +
+  annotate("rect", xmin = 1.7, xmax = 2.4, ymin = 0.4, ymax = 2.3, 
+           fill = "#FEF9E7", alpha = 0.4) +
+  annotate("rect", xmin = 2.4, xmax = 3.6, ymin = 0.4, ymax = 2.3, 
+           fill = "#EBF5FB", alpha = 0.4) +
+  annotate("rect", xmin = 2.4, xmax = 3.6, ymin = 2.3, ymax = 3.6, 
+           fill = "#FDEDEC", alpha = 0.4) +
+  # 區塊標籤
+  annotate("text", x = 1.05, y = 3.4, label = "無行動區", 
+           size = 4, fontface = "italic", color = "gray50") +
+  annotate("text", x = 2.05, y = 3.4, label = "被動區", 
+           size = 4, fontface = "italic", color = "gray50") +
+  annotate("text", x = 3, y = 3.4, label = "主動區", 
+           size = 4, fontface = "italic", color = "gray50") +
+  # 點
+  geom_point(aes(color = 類型), size = 22, alpha = 0.7) +
+  geom_text(aes(label = 類型), size = 5, fontface = "bold") +
+  geom_text(aes(label = 描述), vjust = 3.2, size = 3.5, lineheight = 0.85) +
+  # 分隔線
+  geom_vline(xintercept = c(1.5, 2.4), linetype = "dotted", color = "gray50", linewidth = 0.5) +
+  # 配色
   scale_color_manual(
     values = c(
-      "未參與" = "gray70",
-      "被動觀察" = "#FFA500",
-      "主動問責" = "#00BA38",
-      "主動攻擊" = "#F8766D"
+      "未參與" = "#95A5A6",
+      "被動觀察" = "#F39C12",
+      "被動抵制" = "gold",
+      "主動問責" = "#27AE60",
+      "主動攻擊" = "#E74C3C"
     )
   ) +
   scale_x_continuous(
-    limits = c(0.5, 3.5),
-    breaks = c(1, 3),
-    labels = c("被動/無", "主動")
+    limits = c(0.4, 3.6),
+    breaks = c(1, 2, 3),
+    labels = c("無", "被動", "主動")
   ) +
   scale_y_continuous(
-    limits = c(0.5, 3.5),
-    breaks = c(1, 3),
-    labels = c("低攻擊", "高攻擊")
+    limits = c(0.4, 3.6),
+    breaks = c(1, 2, 3),
+    labels = c("低", "中", "高")
   ) +
   labs(
+    title = "網路正義行為類型分布圖",
     x = "參與程度",
-    y = "攻擊性程度"
+    y = "攻擊程度"
   ) +
   theme_minimal(base_size = 12) +
   theme(
     legend.position = "none",
     panel.grid.minor = element_blank(),
-    axis.text.x = element_text(size = 16, face = "bold"),  # X軸標籤（被動/無、主動）
-    axis.text.y = element_text(size = 15, face = "bold"),  # Y軸標籤（低攻擊、高攻擊）
-    axis.title.x = element_text(size = 14, face = "bold"), # X軸標題
-    axis.title.y = element_text(size = 14, face = "bold")  # Y軸標題
+    panel.grid.major = element_line(color = "gray90"),
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.text = element_text(size = 13, face = "bold"),
+    axis.title = element_text(size = 14, face = "bold")
   )
 
-print(p_quadrant)
+print(p_quadrant_5)
+
 
 # 交叉分析：行為類型 × 有害惡搞
 cat("\n\n【行為類型 × 有害惡搞 交叉表】\n")
