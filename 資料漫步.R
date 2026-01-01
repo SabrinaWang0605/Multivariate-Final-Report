@@ -432,14 +432,7 @@ data = data1 %>%
     
     # ===== Q16/Q19: 惡搞行為 =====
     無害惡搞 = if_else(q16 == 1, "有", "無", missing = "無"),
-    
     有害惡搞 = if_else(q18 == 1, "有", "無", missing = "無"),
-    
-    極端行為 = if_else(
-      q18 == 1 & (q19_01 == 1 | q19_02 == 1), 
-      1, 0, 
-      missing = 0
-    ),
     
     # ===== 滿意度變項 =====
     生活滿意度 = q38_01_1,
@@ -472,6 +465,69 @@ data = data1 %>%
     )
   )
 
+# ====================================
+# 敘述統計
+# ====================================
+#性別分析
+print(table(data$性別))
+# 性別分布長條圖
+gender_dist <- data %>%
+  dplyr::count(性別) %>%
+  dplyr::mutate(
+    pct = n / sum(n) * 100,
+    label = paste0(n, "\n(", round(pct, 1), "%)")
+  )
+
+p_gender <- ggplot(gender_dist, aes(x = 性別, y = n, fill = 性別)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = label), vjust = 0.1, size = 4, fontface = "bold") +
+  scale_fill_manual(values = c("男" = "skyblue", "女" = "pink")) +
+  labs(
+    title = "受訪者性別分布",
+    subtitle = paste0("N = ", nrow(data)),
+    x = "性別",
+    y = "人數"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.text.x = element_text(size = 11, face = "bold")
+  )
+
+print(p_gender)
+# 年齡分析
+print(table(data$年齡組))
+# 年齡組分布長條圖
+age_dist <- data %>%
+  dplyr::count(年齡組) %>%
+  dplyr::mutate(
+    pct = n / sum(n) * 100,
+    label = paste0(n, "\n(", round(pct, 1), "%)")
+  )
+
+p_age <- ggplot(age_dist, aes(x = 年齡組, y = n, fill = 年齡組)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = label), vjust = 0.1, size = 4, fontface = "bold") +
+  scale_fill_brewer(palette = "YlOrRd") +
+  labs(
+    title = "受訪者年齡分布",
+    subtitle = paste0("N = ", nrow(data)),
+    x = "年齡組",
+    y = "人數"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.text.x = element_text(size = 11, face = "bold")
+  )
+
+print(p_age)
+
+
 # 檢查出生地區分布
 cat("出生地區分布：\n")
 print(table(data$出生地區, useNA = "ifany"))
@@ -479,9 +535,8 @@ print(table(data$出生地區, useNA = "ifany"))
 cat("\n出生縣市分布（前10名）：\n")
 print(head(sort(table(data$出生縣市), decreasing = TRUE), 10))
 
-# ====================================
 # 出生地分析
-# ====================================
+
 # 計算各縣市樣本數（只計算台灣地區）
 sample_dist_taiwan = data %>%
   filter(出生地_大分類 %in% c("台灣本島", "台灣離島")) %>%  # 只保留台灣
@@ -1156,6 +1211,7 @@ print(p2_emotion)
 # ===== 熱力圖3：同理心保護因子 =====
 cat("【3/4】同理心保護因子熱力圖...\n")
 
+# 同理心 × 惡搞行為 × 行為類型 熱力圖
 empathy_data = data %>%
   mutate(
     同理心等級 = case_when(
@@ -1167,20 +1223,24 @@ empathy_data = data %>%
     同理心等級 = factor(同理心等級, 
                    levels = c("低同理心", "中同理心", "高同理心")),
     
-    極端行為 = if_else(q18 == 1 & (q19_01 == 1 | q19_02 == 1), "有極端行為", "無極端行為"),
-    極端行為 = factor(極端行為, levels = c("無極端行為", "有極端行為"))
+    惡搞類型 = case_when(
+      有害惡搞 == "有" ~ "有害惡搞",
+      無害惡搞 == "有" ~ "無害惡搞",
+      TRUE ~ "無惡搞"
+    ),
+    惡搞類型 = factor(惡搞類型, levels = c("無惡搞", "無害惡搞", "有害惡搞"))
   ) %>%
   filter(!is.na(同理心等級)) %>%
-  count(同理心等級, 極端行為, 行為類型) %>%
+  count(同理心等級, 惡搞類型, 行為類型) %>%
   group_by(同理心等級) %>%
   mutate(pct = n / sum(n) * 100) %>%
   ungroup()
 
 p3_empathy = ggplot(empathy_data, 
-                     aes(x = 極端行為, y = 行為類型, fill = pct)) +
+                    aes(x = 惡搞類型, y = 行為類型, fill = pct)) +
   geom_tile(color = "white", linewidth = 1.5) +
   geom_text(aes(label = paste0(round(pct, 1), "%\n(n=", n, ")")), 
-            color = "black", size = 3.5, fontface = "bold", lineheight = 0.9) +
+            color = "black", size = 3, fontface = "bold", lineheight = 0.9) +
   facet_wrap(~同理心等級, ncol = 3) +
   scale_fill_gradient(
     low = "skyblue", 
@@ -1188,9 +1248,9 @@ p3_empathy = ggplot(empathy_data,
     name = "比例 (%)"
   ) +
   labs(
-    title = "同理心 × 極端行為 × 行為類型",
-    subtitle = "高同理心作為保護因子：降低極端行為參與",
-    x = "是否參與極端行為",
+    title = "同理心 × 惡搞行為 × 行為類型",
+    subtitle = "高同理心作為保護因子：降低有害惡搞參與",
+    x = "惡搞類型",
     y = "行為類型"
   ) +
   theme_minimal(base_size = 11) +
@@ -2386,5 +2446,3 @@ for (cluster_name in target_clusters) {
 
 cat("\n", paste(rep("=", 40), collapse = ""), "\n")
 cat("✓ MCA 所有群體數據分析完成！\n")
-
-
