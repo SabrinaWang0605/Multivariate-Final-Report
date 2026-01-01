@@ -1118,7 +1118,7 @@ emotion_data = data %>%
                      levels = c("低攻擊", "中攻擊", "高攻擊"))
   ) %>%
   count(生活滿意度_等級, 快樂程度_等級, 主動攻擊_等級) %>%
-  group_by(快樂程度_等級) %>%
+  group_by(主動攻擊_等級) %>%
   mutate(pct = n / sum(n) * 100) %>%
   ungroup()
 
@@ -2386,3 +2386,4 @@ for (cluster_name in target_clusters) {
 
 cat("\n", paste(rep("=", 40), collapse = ""), "\n")
 cat("✓ MCA 所有群體數據分析完成！\n")
+
