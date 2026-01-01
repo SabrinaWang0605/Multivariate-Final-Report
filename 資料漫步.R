@@ -1125,7 +1125,7 @@ emotion_data = data %>%
 p2_emotion = ggplot(emotion_data, 
                      aes(x = 快樂程度_等級, y = 生活滿意度_等級, fill = pct)) +
   geom_tile(color = "white", linewidth = 1.5) +
-  geom_text(aes(label = paste0(round(pct, 1), "%")), 
+  geom_text(aes(label = paste0(round(pct, 1), "%","\n(n=", n, ")")), 
             color = "black", size = 4.5, fontface = "bold") +
   facet_wrap(~主動攻擊_等級, ncol = 3) +
   scale_fill_gradient(
@@ -2386,4 +2386,5 @@ for (cluster_name in target_clusters) {
 
 cat("\n", paste(rep("=", 40), collapse = ""), "\n")
 cat("✓ MCA 所有群體數據分析完成！\n")
+
 
