@@ -2345,7 +2345,7 @@ cat("年齡組配對數：", n1_comparisons, "\n")
 cat("Bonferroni 調整後 α:", round(bonferroni_alpha1, 4), "\n\n")
 
 # ====================================
-# 第9部分：分群 MCA 分析
+# 第9部分：分群 MCA 分析 (變項與維度相關矩陣版)
 # ====================================
 cat("\n\n【9】分群 MCA 分析\n")
 
@@ -2408,9 +2408,9 @@ for (cluster_name in target_clusters) {
     next
   }
   
-  # 2. 執行 MCA 
+  # 2. 執行 MCA (不繪圖)
   n_dims <- min(23, ncol(mca_input) - 1)
-  res_mca <- MCA(mca_input, ncp = n_dims, graph = False)
+  res_mca <- MCA(mca_input, ncp = n_dims, graph = FALSE)
   mca_results_list[[cluster_name]] <- res_mca
   
   # 3. 輸出 Benzécri 修正解釋量
