@@ -430,7 +430,7 @@ data = data1 %>%
     被動抵制 = if_else(q28_1 == 1 | q28_2 == 1, 1, 0, missing = 0),
     主動表達 = if_else(q28_3 == 1, 1, 0, missing = 0),
     
-    # ===== Q17/Q19: 惡搞行為 =====
+    # ===== Q16/Q19: 惡搞行為 =====
     無害惡搞 = if_else(q16 == 1, "有", "無", missing = "無"),
     
     有害惡搞 = if_else(q18 == 1, "有", "無", missing = "無"),
@@ -2451,3 +2451,4 @@ for (cluster_name in names(mca_results_list)) {
 }
 
 cat("\n✓ MCA 分析完成！\n")
+
