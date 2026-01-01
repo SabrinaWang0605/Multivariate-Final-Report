@@ -34,6 +34,11 @@ library(pROC)           # roc, auc, ggroc
 library(cluster)        # daisy, silhouette
 library(clustMixType)   # kproto
 library(patchwork)
+
+#MCA
+library(FactoMineR)
+library(factoextra)
+
 # 遺失值處理
 library(missMDA)        # imputeFAMD, estim_ncpFAMD
 # ============================================
@@ -912,11 +917,7 @@ p7 = ggplot(satisfaction_long,
 print(p7)
 
 # ====================================
-# 五象限示意圖
-# ====================================
-
-# ====================================
-# 五類行為類型二維定位圖
+# 五類行為類型二維定位示意圖
 # ====================================
 
 quadrant_5 = data.frame(
@@ -1025,14 +1026,14 @@ p_q19_v1 = ggplot(q19_summary, aes(x = 行為類型, y = pct, fill = 有害惡�
   ) +
   theme_minimal(base_size = 12) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 11, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 9, face = "bold"),
     legend.position = "top"
   )
 
 print(p_q19_v1)
 
 # ====================================
-# 核心研究變項：5大熱力圖
+# 核心研究變項：4大熱力圖
 # ====================================
 
 # ===== 熱力圖1：攻擊敏感度機制 =====
@@ -1561,13 +1562,11 @@ cat("\n✓ 前提假設檢定完成\n")
 cat("建議：若違反常態性，可使用無母數檢定（Kruskal-Wallis）\n")
 cat("建議：若違反變異數同質性，可使用 Welch's ANOVA\n\n")
 
-# 【3.2】單因子 ANOVA（含效果量）
+# 【3.2】單因子 ANOVA
 
 cat("【3.2】單因子 ANOVA）\n\n")
 
-# ----- 3.2.1 性別差異 -----
-cat("--- 3.2.1 性別差異檢驗 ---\n")
-
+# 3.2.1 性別差異
 # 標準 ANOVA
 anova_sex = aov(主動攻擊分數 ~ 性別, data = anova_data)
 cat("\n標準 ANOVA：\n")
@@ -1614,7 +1613,7 @@ games_howell_age = anova_data %>%
   games_howell_test(主動攻擊分數 ~ 年齡組)
 print(games_howell_age)
 
-# ----- 3.2.3 出生地區差異 -----
+# 3.2.3 出生地區差異 
 cat("\n--- 3.2.3 出生地區差異檢驗 ---\n")
 
 anova_region = aov(主動攻擊分數 ~ 出生地區, data = anova_data)
@@ -1624,7 +1623,7 @@ print(summary(anova_region))
 cat("\n事後檢定（Tukey HSD）：\n")
 print(TukeyHSD(anova_region))
 
-# ----- 3.2.4 教育程度差異 -----
+# 3.2.4 教育程度差異
 cat("\n--- 3.2.4 教育程度差異檢驗 ---\n")
 
 anova_edu = aov(主動攻擊分數 ~ 教育程度, data = anova_data)
@@ -1695,7 +1694,7 @@ print(dunn_edu)
 
 cat("\n\n【3.4】雙因子 ANOVA\n\n")
 
-# ----- 3.4.1 性別 × 年齡組 -----
+# 3.4.1 性別 × 年齡組
 cat("--- 3.4.1 性別 × 年齡組 對主動攻擊分數的影響 ---\n")
 
 anova_2way_1 = aov(主動攻擊分數 ~ 性別 * 年齡組, data = anova_data)
@@ -1742,7 +1741,7 @@ p_interaction_1 = ggplot(interaction_data_1,
 
 print(p_interaction_1)
 
-# ----- 3.4.2 性別 × 教育程度 -----
+# 3.4.2 性別 × 教育程度
 cat("\n--- 3.4.2 性別 × 教育程度 對主動攻擊分數的影響 ---\n")
 
 anova_2way_2 = aov(主動攻擊分數 ~ 性別 * 教育程度, data = anova_data)
@@ -1782,7 +1781,7 @@ p_interaction_2 = ggplot(interaction_data_2,
 
 print(p_interaction_2)
 
-# ----- 3.4.3 簡單主效果分析 -----
+# 3.4.3 簡單主效果分析
 cat("\n--- 3.4.3 簡單主效果分析 ---\n")
 cat("當交互作用顯著時，進行簡單主效果分析\n\n")
 
@@ -1909,8 +1908,6 @@ print(summary.aov(manova_2way))
 # ====================================
 # 第5部分：聚類分析（Cluster Analysis）使用 kproto 方法
 # ====================================
-library(clustMixType)
-
 cat("\n\n【5】聚類分析：參與者原型\n")
 
 # 準備聚類數據
@@ -2329,3 +2326,128 @@ bonferroni_alpha1 = 0.05 / n1_comparisons
 
 cat("年齡組配對數：", n1_comparisons, "\n")
 cat("Bonferroni 調整後 α:", round(bonferroni_alpha1, 4), "\n\n")
+
+# ====================================
+# 第9部分：分群 MCA 分析
+# ====================================
+cat("\n\n【9】分群 MCA 分析\n")
+
+# --- 9.1 資料準備 ---
+cat("【9.1】準備 MCA 資料\n")
+
+# 移除已用於建構分數的原始題項
+pattern_to_remove <- "^(q22|q23|q28|q20|q25|q31_1|q39)"
+cols_to_del <- grep(pattern_to_remove, names(complete_data), value = TRUE)
+
+data_for_mca <- complete_data %>%
+  dplyr::select(-all_of(cols_to_del)) %>%
+  mutate(across(where(is.numeric), as.factor)) %>%
+  mutate(
+    Cluster = factor(kp$cluster, 
+                     levels = c(1, 2, 3), 
+                     labels = c("Cluster_1", "Cluster_2", "Cluster_3"))
+  )
+
+cat("MCA 資料維度：", nrow(data_for_mca), "x", ncol(data_for_mca), "\n")
+cat("移除欄位：", length(cols_to_del), "個\n\n")
+
+# --- 9.2 Benzécri 修正函數 ---
+calculate_benzecri <- function(mca_obj) {
+  eig_table <- as.data.frame(get_eigenvalue(mca_obj))
+  eig <- eig_table[, 1]
+  J <- ncol(mca_obj$call$X)
+  threshold <- 1/J
+  idx <- which(eig > threshold)
+  
+  if (length(idx) == 0) return(NULL)
+  
+  adjusted_lambda <- ((J / (J - 1)) * (eig[idx] - threshold))^2
+  prop <- adjusted_lambda / sum(adjusted_lambda) * 100
+  cum_prop <- cumsum(prop)
+  
+  data.frame(
+    維度 = paste0("Dim.", idx),
+    原始特徵值 = round(eig[idx], 4),
+    修正慣量 = round(adjusted_lambda, 4),
+    修正解釋比例 = paste0(round(prop, 2), "%"),
+    累積解釋比例 = paste0(round(cum_prop, 2), "%")
+  )
+}
+
+# --- 9.3 執行分群 MCA ---
+cat("【9.3】執行分群 MCA 分析\n")
+
+mca_results_list <- list()
+target_clusters <- c("Cluster_1", "Cluster_2", "Cluster_3")
+
+for (cluster_name in target_clusters) {
+  cat(">>> 分析群體：", cluster_name, "\n")
+  
+  # 過濾該群體資料
+  mca_input <- data_for_mca %>%
+    filter(Cluster == cluster_name) %>%
+    dplyr::select(-Cluster) %>%
+    droplevels() %>%
+    na.omit()
+  
+  # 移除無變異的變項
+  keep_cols <- sapply(mca_input, function(x) nlevels(x) >= 2)
+  mca_input <- mca_input[, keep_cols]
+  
+  cat("樣本數：", nrow(mca_input), "\n")
+  cat("有效變項數：", ncol(mca_input), "\n")
+  
+  if (ncol(mca_input) < 2) {
+    cat("⚠ 有效變項不足，跳過分析\n")
+    next
+  }
+  
+  # 執行 MCA
+  n_dims <- min(23, ncol(mca_input) - 1)
+  res_mca <- MCA(mca_input, ncp = n_dims, graph = FALSE)
+  mca_results_list[[cluster_name]] <- res_mca
+  
+  # 輸出 Benzécri 修正結果
+  cat("\n【Benzécri 修正解釋量】\n")
+  benzecri_result <- calculate_benzecri(res_mca)
+  print(benzecri_result)
+  
+  # 繪製陡坡圖
+  p_scree <- fviz_eig(res_mca, ncp = n_dims, addlabels = TRUE,
+                      main = paste(cluster_name, ": MCA 陡坡圖"))
+  print(p_scree)
+  
+  # 繪製變數相關圖
+  p_var <- fviz_mca_var(res_mca, choice = "mca.cor", repel = TRUE,
+                        title = paste(cluster_name, ": 變數與維度相關性"))
+  print(p_var)
+}
+
+# --- 9.4 核心變項篩選 (η² ≥ 0.3) ---
+cat("\n\n【9.4】核心解釋變項篩選 (η² ≥ 0.3)\n")
+
+for (cluster_name in names(mca_results_list)) {
+  cat("\n>>> ", cluster_name, " <<<\n", sep = "")
+  
+  res_mca <- mca_results_list[[cluster_name]]
+  cor_mat <- as.data.frame(res_mca$var$eta2)
+  colnames(cor_mat) <- make.names(colnames(cor_mat))
+  cor_mat$Variable <- rownames(cor_mat)
+  
+  # 篩選前三維度的強相關變項
+  top_features <- cor_mat %>%
+    dplyr::select(Variable, matches("Dim.1$|Dim.2$|Dim.3$")) %>%
+    pivot_longer(cols = starts_with("Dim"), 
+                 names_to = "維度", 
+                 values_to = "Eta2") %>%
+    filter(Eta2 >= 0.3) %>%
+    arrange(維度, desc(Eta2))
+  
+  if (nrow(top_features) > 0) {
+    print(as.data.frame(top_features))
+  } else {
+    cat("此群體在主要維度中無強相關變項 (η² < 0.3)\n")
+  }
+}
+
+cat("\n✓ MCA 分析完成！\n")
