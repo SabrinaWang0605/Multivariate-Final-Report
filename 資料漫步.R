@@ -1723,8 +1723,6 @@ p_interaction_1 = ggplot(interaction_data_1,
                              color = 性別, group = 性別)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 3) +
-  geom_errorbar(aes(ymin = 平均分數 - 標準誤, ymax = 平均分數 + 標準誤),
-                width = 0.2, linewidth = 0.8) +
   scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
   labs(
     title = "性別 × 年齡組 交互作用圖",
@@ -1763,8 +1761,6 @@ p_interaction_2 = ggplot(interaction_data_2,
                              color = 性別, group = 性別)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 3) +
-  geom_errorbar(aes(ymin = 平均分數 - 標準誤, ymax = 平均分數 + 標準誤),
-                width = 0.2, linewidth = 0.8) +
   scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
   labs(
     title = "性別 × 教育程度 交互作用圖",
@@ -2173,24 +2169,8 @@ eval_long <- evaluation_results %>%
     values_to = "value"
   )
 
-# 1. Elbow 圖
-p_elbow_detailed <- ggplot(evaluation_results, aes(x = k, y = wss)) +
-  geom_point(size = 3, color = "#E74C3C") +
-  geom_line(color = "#E74C3C", linewidth = 1) +
-  labs(
-    title = "Elbow Method：WSS 曲線",
-    x = "聚類數 (k)",
-    y = "群內距離平方和 (WSS)"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
-    axis.text = element_text(size = 11)
-  )
 
-print(p_elbow_detailed)
-
-# 2. Silhouette 圖
+# Silhouette 圖
 p_silhouette_detailed <- ggplot(
   evaluation_results[!is.na(evaluation_results$silhouette), ], 
   aes(x = k, y = silhouette)
@@ -2212,30 +2192,6 @@ p_silhouette_detailed <- ggplot(
   )
 
 print(p_silhouette_detailed)
-
-# 3. 組合圖
-p_combined <- ggplot(evaluation_results, aes(x = k)) +
-  geom_line(aes(y = scale(wss)[,1], color = "WSS (標準化)"), linewidth = 1) +
-  geom_point(aes(y = scale(wss)[,1], color = "WSS (標準化)"), size = 2) +
-  geom_line(aes(y = silhouette, color = "Silhouette 係數"), linewidth = 1, na.rm = TRUE) +
-  geom_point(aes(y = silhouette, color = "Silhouette 係數"), size = 2, na.rm = TRUE) +
-  scale_color_manual(
-    values = c("WSS (標準化)" = "#E74C3C", "Silhouette 係數" = "#3498DB"),
-    name = "指標"
-  ) +
-  labs(
-    title = "Kproto 聚類評估指標組合",
-    x = "聚類數 (k)",
-    y = "標準化值 / Silhouette 係數"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 13, face = "bold", hjust = 0.5),
-    axis.text = element_text(size = 11),
-    legend.position = "right"
-  )
-
-print(p_combined)
 
 cat("✓ 評估完成！\n")
 
@@ -2451,4 +2407,3 @@ for (cluster_name in names(mca_results_list)) {
 }
 
 cat("\n✓ MCA 分析完成！\n")
-
