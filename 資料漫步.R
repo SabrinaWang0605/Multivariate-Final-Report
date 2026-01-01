@@ -2177,9 +2177,10 @@ p_silhouette_detailed <- ggplot(
 ) +
   geom_point(size = 3, color = "#3498DB") +
   geom_line(color = "#3498DB", linewidth = 1) +
+  geom_vline(xintercept = 3, linetype = "dashed", color = "red", size = 1.2) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray", linewidth = 0.8) +
   labs(
-    title = "Silhouette 係數：聚類品質評估",
+    title = "Silhouette 係數：確定最佳聚類數",
     subtitle = "越接近 1 表示聚類越好，<0.25 表示聚類結構弱",
     x = "聚類數 (k)",
     y = "平均 Silhouette 係數"
@@ -2290,8 +2291,6 @@ cat("\n\n【9】分群 MCA 分析\n")
 
 # --- 9.1 資料準備 ---
 cat("【9.1】準備 MCA 資料\n")
-
-# 移除已用於建構分數的原始題項
 pattern_to_remove <- "^(q22|q23|q28|q20|q25|q31_1|q39)"
 cols_to_del <- grep(pattern_to_remove, names(complete_data), value = TRUE)
 
@@ -2304,9 +2303,6 @@ data_for_mca <- complete_data %>%
                      labels = c("Cluster_1", "Cluster_2", "Cluster_3"))
   )
 
-cat("MCA 資料維度：", nrow(data_for_mca), "x", ncol(data_for_mca), "\n")
-cat("移除欄位：", length(cols_to_del), "個\n\n")
-
 # --- 9.2 Benzécri 修正函數 ---
 calculate_benzecri <- function(mca_obj) {
   eig_table <- as.data.frame(get_eigenvalue(mca_obj))
@@ -2314,13 +2310,10 @@ calculate_benzecri <- function(mca_obj) {
   J <- ncol(mca_obj$call$X)
   threshold <- 1/J
   idx <- which(eig > threshold)
-  
   if (length(idx) == 0) return(NULL)
-  
   adjusted_lambda <- ((J / (J - 1)) * (eig[idx] - threshold))^2
   prop <- adjusted_lambda / sum(adjusted_lambda) * 100
   cum_prop <- cumsum(prop)
-  
   data.frame(
     維度 = paste0("Dim.", idx),
     原始特徵值 = round(eig[idx], 4),
@@ -2330,68 +2323,53 @@ calculate_benzecri <- function(mca_obj) {
   )
 }
 
-# --- 9.3 執行分群 MCA ---
-cat("【9.3】執行分群 MCA 分析\n")
+# --- 9.3 執行分群 MCA 並輸出數據 ---
+cat("【9.3】執行 MCA 運算與相關性矩陣輸出\n")
 
 mca_results_list <- list()
 target_clusters <- c("Cluster_1", "Cluster_2", "Cluster_3")
 
 for (cluster_name in target_clusters) {
-  cat(">>> 分析群體：", cluster_name, "\n")
+  cat("\n", paste(rep("=", 40), collapse = ""), "\n")
+  cat(">>> 正在處理：", cluster_name, " <<<\n")
   
-  # 過濾該群體資料
+  # 1. 資料過濾
   mca_input <- data_for_mca %>%
     filter(Cluster == cluster_name) %>%
     dplyr::select(-Cluster) %>%
     droplevels() %>%
     na.omit()
   
-  # 移除無變異的變項
   keep_cols <- sapply(mca_input, function(x) nlevels(x) >= 2)
   mca_input <- mca_input[, keep_cols]
   
-  cat("樣本數：", nrow(mca_input), "\n")
-  cat("有效變項數：", ncol(mca_input), "\n")
-  
   if (ncol(mca_input) < 2) {
-    cat("⚠ 有效變項不足，跳過分析\n")
+    cat("⚠ ", cluster_name, " 有效變項不足，跳過\n")
     next
   }
   
-  # 執行 MCA
+  # 2. 執行 MCA 
   n_dims <- min(23, ncol(mca_input) - 1)
-  res_mca <- MCA(mca_input, ncp = n_dims, graph = FALSE)
+  res_mca <- MCA(mca_input, ncp = n_dims, graph = False)
   mca_results_list[[cluster_name]] <- res_mca
   
-  # 輸出 Benzécri 修正結果
-  cat("\n【Benzécri 修正解釋量】\n")
-  benzecri_result <- calculate_benzecri(res_mca)
-  print(benzecri_result)
+  # 3. 輸出 Benzécri 修正解釋量
+  cat("\n[1] Benzécri 修正解釋量：\n")
+  print(calculate_benzecri(res_mca))
   
-  # 繪製陡坡圖
-  p_scree <- fviz_eig(res_mca, ncp = n_dims, addlabels = TRUE,
-                      main = paste(cluster_name, ": MCA 陡坡圖"))
-  print(p_scree)
+  # 4. 輸出「變項與維度相關矩陣 (Eta2)」
+  # 這反映了原始變項對各維度的解釋強度
+  cat("\n[2] 原始變項與維度相關矩陣 (η²)：\n")
+  eta2_matrix <- as.data.frame(res_mca$var$eta2)
+  # 僅顯示前 5 個維度 (或根據需要調整)
+  print(round(eta2_matrix[, 1:min(5, ncol(eta2_matrix))], 4))
   
-  # 繪製變數相關圖
-  p_var <- fviz_mca_var(res_mca, choice = "mca.cor", repel = TRUE,
-                        title = paste(cluster_name, ": 變數與維度相關性"))
-  print(p_var)
-}
-
-# --- 9.4 核心變項篩選 (η² ≥ 0.3) ---
-cat("\n\n【9.4】核心解釋變項篩選 (η² ≥ 0.3)\n")
-
-for (cluster_name in names(mca_results_list)) {
-  cat("\n>>> ", cluster_name, " <<<\n", sep = "")
+  # 5. 核心變項篩選總結 (η² ≥ 0.3)
+  cat("\n[3] 強相關變項篩選清單 (η² ≥ 0.3)：\n")
+  cor_mat_df <- eta2_matrix
+  cor_mat_df$Variable <- rownames(cor_mat_df)
   
-  res_mca <- mca_results_list[[cluster_name]]
-  cor_mat <- as.data.frame(res_mca$var$eta2)
-  colnames(cor_mat) <- make.names(colnames(cor_mat))
-  cor_mat$Variable <- rownames(cor_mat)
-  
-  # 篩選前三維度的強相關變項
-  top_features <- cor_mat %>%
+  top_features <- cor_mat_df %>%
     dplyr::select(Variable, matches("Dim.1$|Dim.2$|Dim.3$")) %>%
     pivot_longer(cols = starts_with("Dim"), 
                  names_to = "維度", 
@@ -2402,8 +2380,9 @@ for (cluster_name in names(mca_results_list)) {
   if (nrow(top_features) > 0) {
     print(as.data.frame(top_features))
   } else {
-    cat("此群體在主要維度中無強相關變項 (η² < 0.3)\n")
+    cat("該群體無強相關變項 (η² < 0.3)\n")
   }
 }
 
-cat("\n✓ MCA 分析完成！\n")
+cat("\n", paste(rep("=", 40), collapse = ""), "\n")
+cat("✓ MCA 所有群體數據分析完成！\n")
