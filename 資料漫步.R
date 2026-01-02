@@ -1312,21 +1312,7 @@ cat("樣本數：", nrow(logistic_data), "\n")
 cat("高主動攻擊:", sum(logistic_data$高主動攻擊), "人 (", 
     round(sum(logistic_data$高主動攻擊)/nrow(logistic_data)*100, 1), "%)\n\n")
 
-# 2.1 單變項邏輯迴歸
-cat("【2.1】單變項邏輯迴歸\n")
-univariate_vars = c("年齡_標準化", "性別_numeric", "被動攻擊_標準化","教育", "出生地",
-                    "攻擊敏感度_標準化", "同理心_標準化", "滿意度_標準化","快樂度_標準化")
-
-univariate_results = list()
-for(var in univariate_vars) {
-  formula = as.formula(paste("高主動攻擊 ~", var))
-  model = glm(formula, data = logistic_data, family = "binomial")
-  univariate_results[[var]] = model
-}
-
-print(univariate_results)
-
-# 2.2 多變項邏輯迴歸
+# 2.1 多變項邏輯迴歸
 cat("\n【2.2】多變項邏輯迴歸\n")
 model_logistic_full = glm(
   高主動攻擊 ~ 年齡_標準化+性別_numeric+被動攻擊_標準化+
@@ -1775,6 +1761,11 @@ box_result = box_m(manova_data[, c("主動攻擊分數", "被動攻擊分數",
                                    "快樂程度", "生活滿意度")],
                    manova_data$性別)
 print(box_result)
+box_result = box_m(manova_data[, c("主動攻擊分數", "被動攻擊分數", 
+                                   "攻擊敏感度指數", "同理心程度", 
+                                   "快樂程度", "生活滿意度")],
+                   manova_data$年齡組)
+print(box_result)
 
 # 多變量常態性（Mardia's test）
 cat("\n多變量常態性）：\n")
@@ -1804,19 +1795,10 @@ colnames(dv_matrix_sex) = c("主動攻擊", "被動攻擊", "攻擊敏感度", "
 # MANOVA
 manova_sex = manova(dv_matrix_sex ~ 性別, data = manova_data)
 
-cat("\nMANOVA 結果（Pillai's Trace）：\n")
-print(summary(manova_sex, test = "Pillai"))
-
 cat("\nMANOVA 結果（Wilks' Lambda）：\n")
 print(summary(manova_sex, test = "Wilks"))
 
-cat("\nMANOVA 結果（Hotelling-Lawley）：\n")
-print(summary(manova_sex, test = "Hotelling-Lawley"))
-
-cat("\nMANOVA 結果（Roy's Greatest Root）：\n")
-print(summary(manova_sex, test = "Roy"))
-
-# 單變項 ANOVA（後續檢定）
+# 單變項 ANOVA
 cat("\n單變項 ANOVA（分解 MANOVA）：\n")
 print(summary.aov(manova_sex))
 
@@ -1824,9 +1806,6 @@ print(summary.aov(manova_sex))
 cat("\n--- 3.6.2 年齡組對多變項的影響 ---\n")
 
 manova_age = manova(dv_matrix_sex ~ 年齡組, data = manova_data)
-
-cat("\nMANOVA 結果（Pillai's Trace）：\n")
-print(summary(manova_age, test = "Pillai"))
 
 cat("\nMANOVA 結果（Wilks' Lambda）：\n")
 print(summary(manova_age, test = "Wilks"))
@@ -1839,22 +1818,11 @@ cat("\n--- 3.6.3 教育程度對多變項的影響 ---\n")
 
 manova_edu = manova(dv_matrix_sex ~ 教育程度, data = manova_data)
 
-cat("\nMANOVA 結果（Pillai's Trace）：\n")
-print(summary(manova_edu, test = "Pillai"))
+cat("\nMANOVA 結果（Wilks' Lambda）：\n")
+print(summary(manova_edu, test = "Wilks"))
 
 cat("\n單變項 ANOVA：\n")
 print(summary.aov(manova_edu))
-
-# ----- 3.6.4 雙因子 MANOVA -----
-cat("\n--- 3.6.4 雙因子 MANOVA（性別 × 年齡組）---\n")
-
-manova_2way = manova(dv_matrix_sex ~ 性別 * 年齡組, data = manova_data)
-
-cat("\nMANOVA 結果（Pillai's Trace）：\n")
-print(summary(manova_2way, test = "Pillai"))
-
-cat("\n單變項 ANOVA：\n")
-print(summary.aov(manova_2way))
 
 # ====================================
 # 第5部分：聚類分析（Cluster Analysis）使用 kproto 方法
