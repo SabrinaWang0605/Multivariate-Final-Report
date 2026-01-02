@@ -72,6 +72,7 @@ pattern = paste0("^(", paste(target_nums, collapse = "|"), ")(\\.|\\()")
 matched_indices = grep(pattern, all_labels)
 new_data = my_data_raw[, matched_indices]
 
+
 cat("  目標題號：", paste(target_nums, collapse = ", "), "\n")
 cat("  匹配欄位數：", ncol(new_data), "\n\n")
 
@@ -648,6 +649,7 @@ p_map = ggplot(map_data) +
     panel.grid = element_blank(),
     legend.position = "right"
   )
+
 print(p_map)
 
 # 完整出生地統計表
@@ -963,6 +965,15 @@ print(p_quadrant_5)
 cat("\n\n【行為類型 × 有害惡搞 交叉表】\n")
 cross_tab = table(data$行為類型, data$有害惡搞)
 print(cross_tab)
+
+cat("\n比例（列百分比）：\n")
+print(round(prop.table(cross_tab, margin = 1) * 100, 2))
+
+# 卡方檢定
+chi_test = chisq.test(cross_tab)
+cat("\n卡方檢定：χ² =", round(chi_test$statistic, 3), 
+    ", df =", chi_test$parameter,
+    ", p =", format.pval(chi_test$p.value), "\n")
 
 # 視覺化
 #圖一分組長條圖
@@ -1532,132 +1543,130 @@ cat("\n✓ 前提假設檢定完成\n")
 cat("建議：若違反常態性，可使用無母數檢定（Kruskal-Wallis）\n")
 cat("建議：若違反變異數同質性，可使用 Welch's ANOVA\n\n")
 
+# ====================================
+# 無母數檢定：Kruskal-Wallis + Dunn's test
+# ====================================
+
+cat("【無母數檢定】Kruskal-Wallis 檢定\n")
+cat("由於所有依變項均違反常態性假設，採用無母數方法\n\n")
+
+# ====================================
+# Kruskal-Wallis 無母數檢定（迴圈版）
+# ====================================
+
+cat("============================================================\n")
+cat("【Kruskal-Wallis 檢定】\n")
+cat("由於所有依變項均違反常態性假設，採用無母數方法\n")
+cat("============================================================\n\n")
+
 # 【3.2】單因子 ANOVA
 
 cat("【3.2】單因子 ANOVA）\n\n")
 
-# 3.2.1 性別差異
-# 標準 ANOVA
-anova_sex = aov(主動攻擊分數 ~ 性別, data = anova_data)
-cat("\n標準 ANOVA：\n")
-print(summary(anova_sex))
+# 定義所有分析組合
+analysis_list <- list(
+  # 主動攻擊分數
+  list(dv = "主動攻擊分數", iv = "性別"),
+  list(dv = "主動攻擊分數", iv = "年齡組"),
+  list(dv = "主動攻擊分數", iv = "出生地區"),
+  list(dv = "主動攻擊分數", iv = "教育程度"),
+  # 被動攻擊分數
+  list(dv = "被動攻擊分數", iv = "性別"),
+  list(dv = "被動攻擊分數", iv = "年齡組"),
+  list(dv = "被動攻擊分數", iv = "出生地區"),
+  list(dv = "被動攻擊分數", iv = "教育程度"),
+  # 攻擊敏感度指數
+  list(dv = "攻擊敏感度指數", iv = "性別"),
+  list(dv = "攻擊敏感度指數", iv = "年齡組"),
+  list(dv = "攻擊敏感度指數", iv = "出生地區"),
+  list(dv = "攻擊敏感度指數", iv = "教育程度"),
+  # 同理心程度
+  list(dv = "同理心程度", iv = "性別"),
+  list(dv = "同理心程度", iv = "年齡組"),
+  list(dv = "同理心程度", iv = "出生地區"),
+  list(dv = "同理心程度", iv = "教育程度"),
+  # 生活滿意度
+  list(dv = "生活滿意度", iv = "性別"),
+  list(dv = "生活滿意度", iv = "年齡組"),
+  list(dv = "生活滿意度", iv = "出生地區"),
+  list(dv = "生活滿意度", iv = "教育程度"),
+  # 快樂程度
+  list(dv = "快樂程度", iv = "性別"),
+  list(dv = "快樂程度", iv = "年齡組"),
+  list(dv = "快樂程度", iv = "出生地區"),
+  list(dv = "快樂程度", iv = "教育程度")
+)
 
-# Welch's ANOVA（不假設變異數同質）
-welch_sex = oneway.test(主動攻擊分數 ~ 性別, data = anova_data, var.equal = FALSE)
-cat("\nWelch's ANOVA（穩健版）：\n")
-cat("F =", round(welch_sex$statistic, 3), 
-    ", df1 =", round(welch_sex$parameter[1], 2),
-    ", df2 =", round(welch_sex$parameter[2], 2),
-    ", p =", format.pval(welch_sex$p.value), "\n")
+# 儲存結果
+kw_results <- data.frame()
 
-# 事後檢定
-cat("\n事後檢定（Tukey HSD）：\n")
-print(TukeyHSD(anova_sex))
+for (item in analysis_list) {
+  dv <- item$dv
+  iv <- item$iv
+  
+  # Kruskal-Wallis 檢定
+  formula <- as.formula(paste(dv, "~", iv))
+  kw <- kruskal.test(formula, data = anova_data)
+  
+  # 效果量 (epsilon squared)
+  effsize <- anova_data %>%
+    kruskal_effsize(formula)
+  
+  # 儲存結果
+  kw_results <- rbind(kw_results, data.frame(
+    依變項 = dv,
+    分組變項 = iv,
+    χ2 = round(kw$statistic, 3),
+    df = kw$parameter,
+    p值 = format.pval(kw$p.value, digits = 4),
+    效果量 = round(effsize$effsize, 4),
+    效果大小 = effsize$magnitude,
+    顯著 = ifelse(kw$p.value < 0.05, "*", "")
+  ))
+  
+  # 若顯著，進行事後比較
+  if (kw$p.value < 0.05) {
+    cat("---", dv, "×", iv, "---\n")
+    cat("χ² =", round(kw$statistic, 3), 
+        ", df =", kw$parameter,
+        ", p =", format.pval(kw$p.value), "\n")
+    cat("效果量 ε² =", round(effsize$effsize, 4), 
+        "(", effsize$magnitude, ")\n")
+    
+    # 描述統計
+    cat("\n各組描述統計：\n")
+    desc <- anova_data %>%
+      group_by(across(all_of(iv))) %>%
+      summarise(
+        n = n(),
+        中位數 = median(.data[[dv]]),
+        平均數 = round(mean(.data[[dv]]), 3),
+        SD = round(sd(.data[[dv]]), 3),
+        .groups = "drop"
+      )
+    print(desc)
+    
+    # Dunn's test 事後比較
+    dunn <- anova_data %>%
+      dunn_test(formula, p.adjust.method = "bonferroni")
+    
+    cat("\n事後比較（Dunn's test, Bonferroni 校正）：\n")
+    print(dunn)
+    
+    # 只顯示顯著的配對
+    sig_pairs <- dunn %>% filter(p.adj < 0.05)
+    if (nrow(sig_pairs) > 0) {
+      cat("\n顯著差異配對：\n")
+      print(sig_pairs %>% dplyr::select(group1, group2, statistic, p.adj))
+    }
+    cat("\n\n")
+  }
+}
 
-# Games-Howell（不假設變異數同質）
-cat("\n事後檢定（Games-Howell，穩健版）：\n")
-games_howell_sex = anova_data %>%
-  games_howell_test(主動攻擊分數 ~ 性別)
-print(games_howell_sex)
+# 輸出彙整表
+cat("\n【Kruskal-Wallis 檢定結果彙整】\n")
+print(kw_results)
 
-#  3.2.2 年齡組差異
-cat("\n--- 3.2.2 年齡組差異檢驗 ---\n")
-
-anova_age = aov(主動攻擊分數 ~ 年齡組, data = anova_data)
-cat("\n標準 ANOVA：\n")
-print(summary(anova_age))
-
-# Welch's ANOVA
-welch_age = oneway.test(主動攻擊分數 ~ 年齡組, data = anova_data, var.equal = FALSE)
-cat("\nWelch's ANOVA：\n")
-cat("F =", round(welch_age$statistic, 3), ", p =", format.pval(welch_age$p.value), "\n")
-
-# 事後檢定
-cat("\n事後檢定（Tukey HSD）：\n")
-age_tukey = TukeyHSD(anova_age)
-print(age_tukey)
-
-# Games-Howell（不假設變異數同質）
-cat("\n事後檢定（Games-Howell，穩健版）：\n")
-games_howell_age = anova_data %>%
-  games_howell_test(主動攻擊分數 ~ 年齡組)
-print(games_howell_age)
-
-# 3.2.3 出生地區差異 
-cat("\n--- 3.2.3 出生地區差異檢驗 ---\n")
-
-anova_region = aov(主動攻擊分數 ~ 出生地區, data = anova_data)
-cat("\n標準 ANOVA：\n")
-print(summary(anova_region))
-
-cat("\n事後檢定（Tukey HSD）：\n")
-print(TukeyHSD(anova_region))
-
-# 3.2.4 教育程度差異
-cat("\n--- 3.2.4 教育程度差異檢驗 ---\n")
-
-anova_edu = aov(主動攻擊分數 ~ 教育程度, data = anova_data)
-cat("\n標準 ANOVA：\n")
-print(summary(anova_edu))
-
-cat("\n事後檢定（Tukey HSD）：\n")
-print(TukeyHSD(anova_edu))
-
-# ====================================
-# 【3.3】無母數替代：Kruskal-Wallis 檢定
-# ====================================
-
-cat("\n【3.3】無母數替代：Kruskal-Wallis 檢定\n")
-cat("當違反常態性假設時使用\n\n")
-
-# 性別
-kw_sex = kruskal.test(主動攻擊分數 ~ 性別, data = anova_data)
-cat("--- 性別 ---\n")
-cat("χ² =", round(kw_sex$statistic, 3), 
-    ", df =", kw_sex$parameter,
-    ", p =", format.pval(kw_sex$p.value), "\n")
-
-# 年齡組
-kw_age = kruskal.test(主動攻擊分數 ~ 年齡組, data = anova_data)
-cat("--- 年齡組 ---\n")
-cat("χ² =", round(kw_age$statistic, 3), 
-    ", df =", kw_age$parameter,
-    ", p =", format.pval(kw_age$p.value), "\n")
-
-epsilon_age = anova_data %>%
-  kruskal_effsize(主動攻擊分數 ~ 年齡組)
-
-print(epsilon_age)
-
-# 事後檢定（Dunn's test）
-cat("\n事後檢定（Dunn's test with Bonferroni）：\n")
-dunn_age = anova_data %>%
-  dunn_test(主動攻擊分數 ~ 年齡組, p.adjust.method = "bonferroni")
-print(dunn_age)
-
-# 出生地區
-kw_region = kruskal.test(主動攻擊分數 ~ 出生地區, data = anova_data)
-cat("\n--- 出生地區 ---\n")
-cat("χ² =", round(kw_region$statistic, 3), 
-    ", df =", kw_region$parameter,
-    ", p =", format.pval(kw_region$p.value), "\n")
-# 事後檢定（Dunn's test）
-cat("\n事後檢定（Dunn's test with Bonferroni）：\n")
-dunn_region = anova_data %>%
-  dunn_test(主動攻擊分數 ~ 出生地區, p.adjust.method = "bonferroni")
-print(dunn_region)
-
-# 教育程度
-kw_edu = kruskal.test(主動攻擊分數 ~ 教育程度, data = anova_data)
-cat("\n--- 教育程度 ---\n")
-cat("χ² =", round(kw_edu$statistic, 3), 
-    ", df =", kw_edu$parameter,
-    ", p =", format.pval(kw_edu$p.value), "\n")
-# 事後檢定（Dunn's test）
-cat("\n事後檢定（Dunn's test with Bonferroni）：\n")
-dunn_edu = anova_data %>%
-  dunn_test(主動攻擊分數 ~ 教育程度, p.adjust.method = "bonferroni")
-print(dunn_edu)
 # ====================================
 # 【3.4】雙因子 ANOVA（Two-way ANOVA）
 # ====================================
