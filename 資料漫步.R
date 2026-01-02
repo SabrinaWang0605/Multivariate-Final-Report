@@ -1576,7 +1576,10 @@ analysis_list <- list(
   # 主動攻擊分數
   list(dv = "主動攻擊分數", iv = "性別"),
   list(dv = "主動攻擊分數", iv = "年齡組"),
-  list(dv = "主動攻擊分數", iv = "教育程度")
+  list(dv = "主動攻擊分數", iv = "教育程度"),
+  list(dv = "被動攻擊分數", iv = "性別"),
+  list(dv = "被動攻擊分數", iv = "年齡組"),
+  list(dv = "被動攻擊分數", iv = "教育程度")
 )
 
 # 儲存結果
@@ -1921,7 +1924,7 @@ cat("聚類大小：", table(kp$cluster), "\n")
 cat("群內距離平方和（WSS）：", round(sum(kp$withinss), 2), "\n\n")
 
 # ====================================
-# 5.3 聚類特徵描述 - 修正版
+# 5.3 聚類特徵描述
 # ====================================
 
 cat("\n【5.3】聚類特徵描述\n")
@@ -1962,9 +1965,9 @@ print(as.data.frame(cluster_profiles))
 cluster_names <- cluster_profiles %>%
   mutate(
     聚類名稱 = case_when(
-      主動攻擊_M == max(主動攻擊_M) ~ "高攻擊型",
-      主動攻擊_M == min(主動攻擊_M) ~ "低攻擊型",
-      TRUE ~ "中間型"
+      主動攻擊_M == max(主動攻擊_M) ~ "高攻擊情緒型",
+      主動攻擊_M == min(主動攻擊_M) ~ "低反應冷靜型",
+      TRUE ~ "理性同理型"
     )
   )
 
