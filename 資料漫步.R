@@ -833,21 +833,6 @@ print(p3)
 # ====================================
 
 cat("=== Part 6: 滿意度分析 ===\n")
-
-# ANOVA
-anova_life = aov(生活滿意度 ~ 行為類型, data = data)
-cat("\n【生活滿意度 ANOVA】\n")
-print(summary(anova_life))
-# 效果量 (epsilon squared)
-effsize1 <- effectsize::eta_squared(anova_life, partial = FALSE)
-cat("效果量 η² =", round(effsize1$Eta2, 4), "\n")
-
-anova_happy = aov(快樂程度 ~ 行為類型, data = data)
-cat("\n【快樂程度 ANOVA】\n")
-print(summary(anova_happy))
-# 效果量 (epsilon squared)
-effsize2 <- effectsize::eta_squared(anova_happy, partial = FALSE)
-cat("效果量 η² =", round(effsize2$Eta2, 4), "\n")
 # 視覺化
 satisfaction_long = data %>%
   dplyr::select(行為類型, 生活滿意度, 快樂程度) %>%
@@ -1023,7 +1008,7 @@ data = data %>%
       TRUE ~ "高敏感度"
     ),
     攻擊敏感程度 = factor(攻擊敏感程度, 
-                     levels = c("低敏感度", "中敏感度", "高敏感度"))
+                    levels = c("低敏感度", "中敏感度", "高敏感度"))
   )
 
 moral_data = data %>%
@@ -1033,7 +1018,7 @@ moral_data = data %>%
   ungroup()
 
 p1_moral = ggplot(moral_data, 
-                   aes(x = 攻擊敏感程度, y = 行為類型, fill = pct)) +
+                  aes(x = 攻擊敏感程度, y = 行為類型, fill = pct)) +
   geom_tile(color = "white", linewidth = 2) +
   geom_text(aes(label = paste0(round(pct, 1), "%\n(n=", n, ")")), 
             color = "black", size = 5, fontface = "bold", lineheight = 0.9) +
@@ -1097,7 +1082,7 @@ emotion_data = data %>%
   ungroup()
 
 p2_emotion = ggplot(emotion_data, 
-                     aes(x = 快樂程度_等級, y = 生活滿意度_等級, fill = pct)) +
+                    aes(x = 快樂程度_等級, y = 生活滿意度_等級, fill = pct)) +
   geom_tile(color = "white", linewidth = 1.5) +
   geom_text(aes(label = paste0(round(pct, 1), "%","\n(n=", n, ")")), 
             color = "black", size = 4.5, fontface = "bold") +
@@ -1330,7 +1315,7 @@ cat("高主動攻擊:", sum(logistic_data$高主動攻擊), "人 (",
 # 2.1 單變項邏輯迴歸
 cat("【2.1】單變項邏輯迴歸\n")
 univariate_vars = c("年齡_標準化", "性別_numeric", "被動攻擊_標準化","教育", "出生地",
-                     "攻擊敏感度_標準化", "同理心_標準化", "滿意度_標準化","快樂度_標準化")
+                    "攻擊敏感度_標準化", "同理心_標準化", "滿意度_標準化","快樂度_標準化")
 
 univariate_results = list()
 for(var in univariate_vars) {
@@ -1345,7 +1330,7 @@ print(univariate_results)
 cat("\n【2.2】多變項邏輯迴歸\n")
 model_logistic_full = glm(
   高主動攻擊 ~ 年齡_標準化+性別_numeric+被動攻擊_標準化+
-  攻擊敏感度_標準化+ 快樂度_標準化+ 同理心_標準化+滿意度_標準化,
+    攻擊敏感度_標準化+ 快樂度_標準化+ 同理心_標準化+滿意度_標準化,
   data = logistic_data,
   family = "binomial"
 )
@@ -1465,7 +1450,7 @@ dv_vars = c("主動攻擊分數", "被動攻擊分數", "攻擊敏感度指數",
 normality_results = data.frame()
 
 for (var in dv_vars) {
-    test_result = shapiro.test(anova_data[[var]])
+  test_result = shapiro.test(anova_data[[var]])
   
   normality_results = rbind(normality_results, data.frame(
     變項 = var,
@@ -1582,7 +1567,6 @@ cat("建議：若違反變異數同質性，可使用 Welch's ANOVA\n\n")
 # ====================================
 # 無母數檢定：Kruskal-Wallis + Dunn's test
 # ====================================
-
 # 【3.2】單因子 ANOVA
 
 cat("【3.2】單因子 ANOVA）\n\n")
@@ -1592,27 +1576,7 @@ analysis_list <- list(
   # 主動攻擊分數
   list(dv = "主動攻擊分數", iv = "性別"),
   list(dv = "主動攻擊分數", iv = "年齡組"),
-  list(dv = "主動攻擊分數", iv = "教育程度"),
-  # 被動攻擊分數
-  list(dv = "被動攻擊分數", iv = "性別"),
-  list(dv = "被動攻擊分數", iv = "年齡組"),
-  list(dv = "被動攻擊分數", iv = "教育程度"),
-  # 攻擊敏感度指數
-  list(dv = "攻擊敏感度指數", iv = "性別"),
-  list(dv = "攻擊敏感度指數", iv = "年齡組"),
-  list(dv = "攻擊敏感度指數", iv = "教育程度"),
-  # 同理心程度
-  list(dv = "同理心程度", iv = "性別"),
-  list(dv = "同理心程度", iv = "年齡組"),
-  list(dv = "同理心程度", iv = "教育程度"),
-  # 生活滿意度
-  list(dv = "生活滿意度", iv = "性別"),
-  list(dv = "生活滿意度", iv = "年齡組"),
-  list(dv = "生活滿意度", iv = "教育程度"),
-  # 快樂程度
-  list(dv = "快樂程度", iv = "性別"),
-  list(dv = "快樂程度", iv = "年齡組"),
-  list(dv = "快樂程度", iv = "教育程度")
+  list(dv = "主動攻擊分數", iv = "教育程度")
 )
 
 # 儲存結果
@@ -1686,25 +1650,11 @@ cat("\n【Kruskal-Wallis 檢定結果彙整】\n")
 print(kw_results)
 
 # ====================================
-# 【3.4】雙因子 ANOVA（Two-way ANOVA）
+# 【3.4】雙因子 交互作用
 # ====================================
-
-cat("\n\n【3.4】雙因子 ANOVA\n\n")
 
 # 3.4.1 性別 × 年齡組
 cat("--- 3.4.1 性別 × 年齡組 對主動攻擊分數的影響 ---\n")
-
-anova_2way_1 = aov(主動攻擊分數 ~ 性別 * 年齡組, data = anova_data)
-cat("\n雙因子 ANOVA 結果：\n")
-print(summary(anova_2way_1))
-
-# Type III SS（更適合不平衡設計）
-cat("\nType III ANOVA（不平衡設計）：\n")
-anova_type3_1 = Anova(anova_2way_1, type = 3)
-print(anova_type3_1)
-
-cat("\n效果量（partial η²）：\n")
-print(effectsize::eta_squared(anova_2way_1, partial = TRUE))
 
 # 交互作用圖
 cat("\n繪製交互作用圖...\n")
@@ -1739,17 +1689,6 @@ p_interaction_1 = ggplot(interaction_data_1,
 print(p_interaction_1)
 
 # 3.4.2 性別 × 教育程度
-cat("\n--- 3.4.2 性別 × 教育程度 對主動攻擊分數的影響 ---\n")
-
-print(table(anova_data$性別, anova_data$教育程度))
-
-anova_2way_2 = aov(主動攻擊分數 ~ 性別 * 教育程度, data = anova_data)
-cat("\n雙因子 ANOVA 結果：\n")
-print(summary(anova_2way_2))
-
-cat("\n效果量（partial η²）：\n")
-print(effectsize::eta_squared(anova_2way_2, partial = TRUE))
-
 # 交互作用圖
 interaction_data_2 = anova_data %>%
   group_by(性別, 教育程度) %>%
@@ -1781,18 +1720,6 @@ p_interaction_2 = ggplot(interaction_data_2,
 print(p_interaction_2)
 
 # 3.4.3 性別 × 出生地區
-anova_2way_3 = aov(主動攻擊分數 ~ 性別 * 出生地區, data = anova_data)
-cat("\n雙因子 ANOVA 結果：\n")
-print(summary(anova_2way_3))
-
-# Type III SS（更適合不平衡設計）
-cat("\nType III ANOVA（不平衡設計）：\n")
-anova_type3_3 = Anova(anova_2way_3, type = 3)
-print(anova_type3_3)
-
-cat("\n效果量（partial η²）：\n")
-print(effectsize::eta_squared(anova_2way_3, partial = TRUE))
-
 # 交互作用圖
 interaction_data_3 <- anova_data %>%
   group_by(性別, 出生地區) %>%
@@ -1825,7 +1752,7 @@ cat("同時檢驗多個依變項的群組差異\n\n")
 manova_data = data %>%
   dplyr::select(
     主動攻擊分數, 被動攻擊分數, 攻擊敏感度指數,
-    同理心程度, 生活滿意度,
+    同理心程度,快樂程度,生活滿意度,
     性別, 年齡組, 教育程度
   ) %>%
   na.omit()
@@ -1842,7 +1769,7 @@ cat("注意：Box's M 對常態性非常敏感，大樣本時常顯著\n")
 # 使用 rstatix 的 box_m
 box_result = box_m(manova_data[, c("主動攻擊分數", "被動攻擊分數", 
                                    "攻擊敏感度指數", "同理心程度", 
-                                   "生活滿意度")],
+                                   "快樂程度", "生活滿意度")],
                    manova_data$性別)
 print(box_result)
 
@@ -1851,8 +1778,8 @@ cat("\n多變量常態性）：\n")
 library(psych)
 
 mvn_vars = manova_data[, c("主動攻擊分數", "被動攻擊分數", 
-                           "攻擊敏感度指數", "同理心程度", 
-                           "生活滿意度")]
+                           "攻擊敏感度指數", "同理心程度",
+                           "快樂程度", "生活滿意度")]
 
 # Mardia 檢定
 mardia_result = mardia(mvn_vars, plot = T)
@@ -1866,9 +1793,10 @@ dv_matrix_sex = cbind(
   manova_data$被動攻擊分數,
   manova_data$攻擊敏感度指數,
   manova_data$同理心程度,
+  manova_data$快樂程度,
   manova_data$生活滿意度
 )
-colnames(dv_matrix_sex) = c("主動攻擊", "被動攻擊", "攻擊敏感度", "同理心", "生活滿意度")
+colnames(dv_matrix_sex) = c("主動攻擊", "被動攻擊", "攻擊敏感度", "同理心","快樂程度", "生活滿意度")
 
 # MANOVA
 manova_sex = manova(dv_matrix_sex ~ 性別, data = manova_data)
@@ -2242,7 +2170,7 @@ final <- cbind(cluster_data, kp_out)
 cluster_data_numeric = cluster_data %>%
   mutate(同理心程度 = as.numeric(as.character(同理心程度)),
          生活滿意度 = as.numeric(as.character(生活滿意度))
-        )
+  )
 
 final_numeric = cbind(cluster_data_numeric, kp_out)
 
@@ -2269,55 +2197,7 @@ cat("【5.3】聚類特徵描述：\n")
 print(cluster_profiles)
 
 # ====================================
-# 第7部分：效應大小與信心區間
-# ====================================
-cat("\n\n【7】效應大小與信心區間\n")
-
-# 計算性別間的效應大小
-cat("【7.1】Cohen's d：性別間的主動攻擊差異\n")
-male_data = anova_data %>% filter(性別 == "男") %>% pull(主動攻擊分數)
-female_data = anova_data %>% filter(性別 == "女") %>% pull(主動攻擊分數)
-
-cohens_d = (mean(male_data) - mean(female_data)) / 
-  sqrt(((length(male_data)-1)*sd(male_data)^2 + 
-          (length(female_data)-1)*sd(female_data)^2) / 
-         (length(male_data) + length(female_data) - 2))
-
-cat("Cohen's d:", round(cohens_d, 4), "\n")
-cat("效應大小解釋：", 
-    if(abs(cohens_d) < 0.2) "微小" 
-    else if(abs(cohens_d) < 0.5) "小" 
-    else if(abs(cohens_d) < 0.8) "中等" 
-    else "大", "\n\n")
-
-# 計算信心區間
-ci_d = c(cohens_d - 1.96 * sqrt(2/length(male_data) + 2/length(female_data)),
-          cohens_d + 1.96 * sqrt(2/length(male_data) + 2/length(female_data)))
-cat("95% CI: [", round(ci_d[1], 4), ", ", round(ci_d[2], 4), "]\n\n")
-
-# ====================================
-# 第8部分：多重比較修正（Bonferroni）
-# ====================================
-cat("【7.2】多重比較修正\n")
-
-# 年齡組間成對比較
-age_groups = levels(anova_data$年齡組)
-n_comparisons = choose(length(age_groups), 2)
-bonferroni_alpha = 0.05 / n_comparisons
-
-cat("年齡組配對數：", n_comparisons, "\n")
-cat("Bonferroni 調整後 α:", round(bonferroni_alpha, 4), "\n\n")
-
-# kproto分組組間成對比較
-kproto_groups = length(unique(final$Cluster))
-n1_comparisons = choose(kproto_groups, 2)
-bonferroni_alpha1 = 0.05 / n1_comparisons
-
-cat("年齡組配對數：", n1_comparisons, "\n")
-cat("Bonferroni 調整後 α:", round(bonferroni_alpha1, 4), "\n\n")
-
-# ====================================
-# 第9部分：分群 MCA 分析 (變項與維度相關矩陣版)
+# 第7部分：分群 MCA 分析 
 # ====================================
 cat("\n\n【9】分群 MCA 分析\n")
 
