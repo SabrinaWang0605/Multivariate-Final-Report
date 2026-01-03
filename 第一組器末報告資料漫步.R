@@ -23,7 +23,7 @@ library(carData)
 library(car)            # leveneTest, Anova
 library(MASS)           # polr
 library(rstatix)        # games_howell_test, dunn_test, box_m
-library(emmeans)        # emmeans, pairs
+library(emmeans)        # pairs
 library(effectsize)     # 效果量
 
 # 迴歸模型評估
@@ -991,6 +991,94 @@ p_q19_v1 = ggplot(q19_summary, aes(x = 行為類型, y = pct, fill = 有害惡�
 
 print(p_q19_v1)
 
+# 3.4.1 性別 × 年齡組
+cat("--- 3.4.1 性別 × 年齡組 對主動攻擊分數的影響 ---\n")
+
+# 交互作用圖
+cat("\n繪製交互作用圖...\n")
+
+interaction_data_1 = anova_data %>%
+  group_by(性別, 年齡組) %>%
+  dplyr::summarise(
+    平均分數 = mean(主動攻擊分數),
+    標準誤 = sd(主動攻擊分數) / sqrt(dplyr::n()),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
+
+p_interaction_1 = ggplot(interaction_data_1, 
+                         aes(x = 年齡組, y = 平均分數, 
+                             color = 性別, group = 性別)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
+  labs(
+    title = "性別 × 年齡組 交互作用圖",
+    x = "年齡組",
+    y = "主動攻擊分數",
+    color = "性別"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+print(p_interaction_1)
+
+# 3.4.2 性別 × 教育程度
+# 交互作用圖
+interaction_data_2 = anova_data %>%
+  group_by(性別, 教育程度) %>%
+  dplyr::summarise(
+    平均分數 = mean(主動攻擊分數),
+    標準誤 = sd(主動攻擊分數) / sqrt(dplyr::n()),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
+
+p_interaction_2 = ggplot(interaction_data_2, 
+                         aes(x = 教育程度, y = 平均分數, 
+                             color = 性別, group = 性別)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
+  labs(
+    title = "性別 × 教育程度 交互作用圖",
+    x = "教育程度",
+    y = "主動攻擊分數",
+    color = "性別"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+print(p_interaction_2)
+
+# 3.4.3 性別 × 出生地區
+# 交互作用圖
+interaction_data_3 <- anova_data %>%
+  group_by(性別, 出生地區) %>%
+  summarise(
+    平均數 = mean(主動攻擊分數),
+    標準誤 = sd(主動攻擊分數) / sqrt(n()),
+    n = n(),
+    .groups = "drop"
+  )
+
+p_interaction_3 <- ggplot(interaction_data_3, 
+                          aes(x = 出生地區, y = 平均數, color = 性別, group = 性別)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
+  labs(title = "性別 × 出生地區 交互作用圖", x = "出生地區", y = "主動攻擊分數") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p_interaction_3)
+
 # ====================================
 # 核心研究變項：4大熱力圖
 # ====================================
@@ -1637,98 +1725,6 @@ for (item in analysis_list) {
 # 輸出彙整表
 cat("\n【Kruskal-Wallis 檢定結果彙整】\n")
 print(kw_results)
-
-# ====================================
-# 【3.4】雙因子 交互作用
-# ====================================
-
-# 3.4.1 性別 × 年齡組
-cat("--- 3.4.1 性別 × 年齡組 對主動攻擊分數的影響 ---\n")
-
-# 交互作用圖
-cat("\n繪製交互作用圖...\n")
-
-interaction_data_1 = anova_data %>%
-  group_by(性別, 年齡組) %>%
-  dplyr::summarise(
-    平均分數 = mean(主動攻擊分數),
-    標準誤 = sd(主動攻擊分數) / sqrt(dplyr::n()),
-    n = dplyr::n(),
-    .groups = "drop"
-  )
-
-p_interaction_1 = ggplot(interaction_data_1, 
-                         aes(x = 年齡組, y = 平均分數, 
-                             color = 性別, group = 性別)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
-  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
-  labs(
-    title = "性別 × 年齡組 交互作用圖",
-    x = "年齡組",
-    y = "主動攻擊分數",
-    color = "性別"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-print(p_interaction_1)
-
-# 3.4.2 性別 × 教育程度
-# 交互作用圖
-interaction_data_2 = anova_data %>%
-  group_by(性別, 教育程度) %>%
-  dplyr::summarise(
-    平均分數 = mean(主動攻擊分數),
-    標準誤 = sd(主動攻擊分數) / sqrt(dplyr::n()),
-    n = dplyr::n(),
-    .groups = "drop"
-  )
-
-p_interaction_2 = ggplot(interaction_data_2, 
-                         aes(x = 教育程度, y = 平均分數, 
-                             color = 性別, group = 性別)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
-  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
-  labs(
-    title = "性別 × 教育程度 交互作用圖",
-    x = "教育程度",
-    y = "主動攻擊分數",
-    color = "性別"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
-print(p_interaction_2)
-
-# 3.4.3 性別 × 出生地區
-# 交互作用圖
-interaction_data_3 <- anova_data %>%
-  group_by(性別, 出生地區) %>%
-  summarise(
-    平均數 = mean(主動攻擊分數),
-    標準誤 = sd(主動攻擊分數) / sqrt(n()),
-    n = n(),
-    .groups = "drop"
-  )
-
-p_interaction_3 <- ggplot(interaction_data_3, 
-                          aes(x = 出生地區, y = 平均數, color = 性別, group = 性別)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
-  scale_color_manual(values = c("男" = "#1F77B4", "女" = "#FF7F0E")) +
-  labs(title = "性別 × 出生地區 交互作用圖", x = "出生地區", y = "主動攻擊分數") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-print(p_interaction_3)
 
 # ====================================
 # 【3.6】MANOVA（多變量變異數分析）
