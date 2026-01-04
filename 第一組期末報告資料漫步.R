@@ -877,8 +877,8 @@ print(p7)
 # ====================================
 
 quadrant_5 = data.frame(
-  x = c(1, 2, 2, 3, 3),
-  y = c(1, 2.5, 1.5, 1.5, 3),
+  x = c(1, 1, 2, 3, 3),
+  y = c(1, 2.5, 2, 1.5, 3),
   類型 = c("未參與", "被動觀察", "被動抵制", "主動問責", "主動攻擊"),
   描述 = c(
     "不關注\n無行動",
@@ -893,9 +893,9 @@ p_quadrant_5 = ggplot(quadrant_5, aes(x = x, y = y)) +
   # 背景區塊
   annotate("rect", xmin = 0.4, xmax = 1.4, ymin = 0.4, ymax = 2.0, 
            fill = "#E8F8F5", alpha = 0.4) +
-  annotate("rect", xmin = 1.4, xmax = 2.4, ymin = 2.0, ymax = 3.4, 
+  annotate("rect", xmin = 0.4, xmax = 1.4, ymin = 2.0, ymax = 3.4, 
            fill = "#FAF0E6", alpha = 0.4) +
-  annotate("rect", xmin = 1.4, xmax = 2.4, ymin = 0.4, ymax = 2.0, 
+  annotate("rect", xmin = 1.4, xmax = 2.4, ymin = 1.2, ymax = 2.6, 
            fill = "#FEF9E7", alpha = 0.4) +
   annotate("rect", xmin = 2.4, xmax = 3.6, ymin = 0.4, ymax = 2.0, 
            fill = "#EBF5FB", alpha = 0.4) +
