@@ -999,7 +999,7 @@ cat("--- 3.4.1 性別 × 年齡組 對主動攻擊分數的影響 ---\n")
 # 交互作用圖
 cat("\n繪製交互作用圖...\n")
 
-interaction_data_1 = anova_data %>%
+interaction_data_1 = data %>%
   group_by(性別, 年齡組) %>%
   dplyr::summarise(
     平均分數 = mean(主動攻擊分數),
@@ -1030,7 +1030,7 @@ print(p_interaction_1)
 
 # 3.4.2 性別 × 教育程度
 # 交互作用圖
-interaction_data_2 = anova_data %>%
+interaction_data_2 = data %>%
   group_by(性別, 教育程度) %>%
   dplyr::summarise(
     平均分數 = mean(主動攻擊分數),
@@ -1061,7 +1061,7 @@ print(p_interaction_2)
 
 # 3.4.3 性別 × 出生地區
 # 交互作用圖
-interaction_data_3 <- anova_data %>%
+interaction_data_3 <- data %>%
   group_by(性別, 出生地區) %>%
   summarise(
     平均數 = mean(主動攻擊分數),
@@ -1412,7 +1412,7 @@ model_logistic_full = glm(
 )
 print(summary(model_logistic_full))
 
-# 建立 logistic_results（在 model_logistic_full 後面加上）
+# 建立 logistic_results
 coef_full = summary(model_logistic_full)$coefficients[-1, ]
 logistic_results <- tibble(
   變項 = rownames(coef_full),
@@ -1460,7 +1460,7 @@ p_roc = ggroc(roc_obj, color = "#E31A1C", size = 1.2) +
   labs(
     title = "ROC 曲線：預測主動攻擊行為",
     x = "1 - 特異度",
-    y = "靈敏度"
+    y = "敏感度"
   ) +
   theme_minimal(base_size = 12) +
   theme(
